@@ -4,7 +4,13 @@ go 1.22.1
 
 toolchain go1.22.3
 
-require go.lumeweb.com/portal v0.1.2-0.20240717104409-077ae49c8109
+require (
+	github.com/google/uuid v1.6.0
+	github.com/gorilla/mux v1.8.1
+	go.lumeweb.com/httputil v0.0.0-20240616192644-3d270a528d86
+	go.lumeweb.com/portal v0.1.2-0.20240717104409-077ae49c8109
+	gorm.io/gorm v1.25.10
+)
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
@@ -35,9 +41,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gookit/event v1.1.2 // indirect
-	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gotd/contrib v0.20.0 // indirect
 	github.com/hbollon/go-edlib v1.6.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -84,7 +88,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.7 // indirect
 	gorm.io/driver/sqlite v1.5.6 // indirect
-	gorm.io/gorm v1.25.10 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect
 	lukechampine.com/frand v1.4.2 // indirect
 )
