@@ -7,6 +7,7 @@ toolchain go1.22.3
 require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
+	github.com/rs/cors v1.11.0
 	go.lumeweb.com/httputil v0.0.0-20240616192644-3d270a528d86
 	go.lumeweb.com/portal v0.1.2-0.20240717104409-077ae49c8109
 	gorm.io/gorm v1.25.10
@@ -34,8 +35,11 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/getkin/kin-openapi v0.126.0 // indirect
 	github.com/go-co-op/gocron/v2 v2.9.0 // indirect
 	github.com/go-gorm/caches/v4 v4.0.5 // indirect
+	github.com/go-openapi/jsonpointer v0.21.0 // indirect
+	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -44,26 +48,32 @@ require (
 	github.com/gookit/event v1.1.2 // indirect
 	github.com/gotd/contrib v0.20.0 // indirect
 	github.com/hbollon/go-edlib v1.6.0 // indirect
+	github.com/invopop/yaml v0.3.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jonboulle/clockwork v0.4.0 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
 	github.com/klauspost/reedsolomon v1.12.1 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/multiformats/go-multihash v0.2.3 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
+	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pquerna/otp v1.4.0 // indirect
 	github.com/redis/go-redis/v9 v9.5.3 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/samber/lo v1.44.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
+	github.com/ugorji/go/codec v1.2.12 // indirect
 	gitlab.com/NebulousLabs/errors v0.0.0-20200929122200-06c536cf6975 // indirect
 	gitlab.com/NebulousLabs/fastrand v0.0.0-20181126182046-603482d69e40 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.14 // indirect

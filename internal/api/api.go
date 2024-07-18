@@ -1,15 +1,21 @@
 package api
 
 import (
+	_ "embed"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"go.lumeweb.com/httputil"
 	"go.lumeweb.com/portal-plugin-admin/internal"
 	"go.lumeweb.com/portal-plugin-admin/internal/service"
 	"go.lumeweb.com/portal/config"
 	"go.lumeweb.com/portal/core"
+	"go.lumeweb.com/portal/middleware/swagger"
 	"net/http"
 )
+
+//go:embed swagger.yaml
+var swagSpec []byte
 
 var _ core.API = (*API)(nil)
 
@@ -27,10 +33,28 @@ func (a API) Subdomain() string {
 }
 
 func (a API) Configure(router *mux.Router) error {
-	router.HandleFunc("/cron/jobs", a.handleListCronJobs).Methods("GET")
-	router.HandleFunc("/cron/jobs/{uuid}", a.handleGetCronJob).Methods("GET")
-	router.HandleFunc("/cron/jobs/{uuid}/logs", a.handleListCronJobLogs).Methods("GET")
-	router.HandleFunc("/cron/stats", a.handleGetCronStats).Methods("GET")
+
+	// CORS configuration
+	corsOpts := cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+		AllowCredentials: true,
+	}
+	corsHandler := cors.New(corsOpts)
+
+	// Swagger routes
+	err := swagger.Swagger(swagSpec, router)
+	if err != nil {
+		return err
+	}
+
+	router.Use(corsHandler.Handler)
+
+	router.HandleFunc("/api/cron/jobs", a.handleListCronJobs).Methods("GET")
+	router.HandleFunc("/api/cron/jobs/{uuid}", a.handleGetCronJob).Methods("GET")
+	router.HandleFunc("/api/cron/jobs/{uuid}/logs", a.handleListCronJobLogs).Methods("GET")
+	router.HandleFunc("/api/cron/stats", a.handleGetCronStats).Methods("GET")
 	return nil
 }
 
@@ -83,7 +107,7 @@ func (a *API) handleListCronJobs(w http.ResponseWriter, r *http.Request) {
 func (a *API) handleGetCronJob(w http.ResponseWriter, r *http.Request) {
 	ctx := httputil.Context(r, w)
 	vars := mux.Vars(r)
-	_uuid, err := ParseUUID(vars["uuid"])
+	_uuid, err := uuid.Parse(vars["uuid"])
 	if ctx.Check("Invalid UUID", err) != nil {
 		return
 	}
@@ -108,7 +132,7 @@ func (a *API) handleGetCronJob(w http.ResponseWriter, r *http.Request) {
 func (a *API) handleListCronJobLogs(w http.ResponseWriter, r *http.Request) {
 	ctx := httputil.Context(r, w)
 	vars := mux.Vars(r)
-	_uuid, err := ParseUUID(vars["uuid"])
+	_uuid, err := uuid.Parse(vars["uuid"])
 	if ctx.Check("Invalid UUID", err) != nil {
 		return
 	}
@@ -153,9 +177,4 @@ func (a *API) handleGetCronStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx.Encode(response)
-}
-
-// Helper function to parse UUID
-func ParseUUID(s string) (uuid.UUID, error) {
-	return uuid.Parse(s)
 }

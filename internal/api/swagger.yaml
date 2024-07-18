@@ -1,0 +1,154 @@
+openapi: 3.0.0
+info:
+  title: Admin API
+  version: 0.1.0
+paths:
+  /api/cron/jobs:
+    get:
+      summary: List all cron jobs
+      operationId: listCronJobs
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCronJobsResponse'
+        '500':
+          description: Internal server error
+
+  /api/cron/jobs/{uuid}:
+    get:
+      summary: Get a specific cron job
+      operationId: getCronJob
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCronJobResponse'
+        '400':
+          description: Invalid UUID
+        '404':
+          description: Cron job not found
+        '500':
+          description: Internal server error
+
+  /api/cron/jobs/{uuid}/logs:
+    get:
+      summary: List logs for a specific cron job
+      operationId: listCronJobLogs
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCronJobLogsResponse'
+        '400':
+          description: Invalid UUID
+        '404':
+          description: Cron job not found
+        '500':
+          description: Internal server error
+
+  /api/cron/stats:
+    get:
+      summary: Get cron job statistics
+      operationId: getCronStats
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCronStatsResponse'
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    CronJobData:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        function:
+          type: string
+        lastRun:
+          type: string
+          format: date-time
+          nullable: true
+        failures:
+          type: integer
+          format: uint
+
+    ListCronJobsResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/CronJobData'
+
+    GetCronJobResponse:
+      type: object
+      properties:
+        job:
+          $ref: '#/components/schemas/CronJobData'
+
+    CronJobLogData:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: uint
+        type:
+          type: string
+        message:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ListCronJobLogsResponse:
+      type: object
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/CronJobLogData'
+
+    GetCronStatsResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+        failed:
+          type: integer
+          format: int64
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+security:
+  - BearerAuth: []
