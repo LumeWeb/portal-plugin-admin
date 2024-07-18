@@ -50,7 +50,7 @@ func (a *AdminCronService) GetCronJobByUUID(uuid uuid.UUID) (*models.CronJob, er
 
 	job.UUID = types.BinaryUUID(uuid)
 
-	if err := db.RetryWithLock(a.db, func(db *gorm.DB) *gorm.DB {
+	if err := db.RetryOnLock(a.db, func(db *gorm.DB) *gorm.DB {
 		return db.Where(&job).First(&job)
 	}); err != nil {
 		return nil, err
@@ -65,24 +65,26 @@ func (a *AdminCronService) ListCronJobLogs(jobID uint) ([]models.CronJobLog, err
 
 	log.CronJobID = jobID
 
-	if err := db.RetryWithLock(a.db, func(db *gorm.DB) *gorm.DB {
+	if err := db.RetryOnLock(a.db, func(db *gorm.DB) *gorm.DB {
 		return db.Where(&log).Find(&logs)
 	}); err != nil {
 		return nil, err
 	}
+
+	return logs, nil
 }
 
 func (a *AdminCronService) GetCronJobStats() (*CronJobStats, error) {
 	var totalJobs int64
 	var failedJobs int64
 
-	if err := db.RetryWithLock(a.db, func(db *gorm.DB) *gorm.DB {
+	if err := db.RetryOnLock(a.db, func(db *gorm.DB) *gorm.DB {
 		return db.Model(&models.CronJob{}).Count(&totalJobs)
 	}); err != nil {
 		return nil, err
 	}
 
-	if err := db.RetryWithLock(a.db, func(db *gorm.DB) *gorm.DB {
+	if err := db.RetryOnLock(a.db, func(db *gorm.DB) *gorm.DB {
 		return db.Model(&models.CronJob{}).Where("failures > 0").Count(&failedJobs)
 	}); err != nil {
 		return nil, err
