@@ -38,7 +38,7 @@ func (a API) Configure(router *mux.Router) error {
 	corsOpts := cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type", "Cookie"},
 		AllowCredentials: true,
 	}
 	corsHandler := cors.New(corsOpts)
