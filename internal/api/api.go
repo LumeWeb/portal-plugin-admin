@@ -147,10 +147,12 @@ func (a *API) handleGetCronJob(w http.ResponseWriter, r *http.Request) {
 
 	response := &GetCronJobResponse{
 		Job: CronJob{
-			UUID:     job.UUID.String(),
-			Function: job.Function,
-			LastRun:  job.LastRun,
-			Failures: job.Failures,
+			UUID:      job.UUID.String(),
+			Function:  job.Function,
+			LastRun:   job.LastRun,
+			Failures:  job.Failures,
+			CreatedAt: job.CreatedAt,
+			UpdatedAt: job.UpdatedAt,
 		},
 	}
 
