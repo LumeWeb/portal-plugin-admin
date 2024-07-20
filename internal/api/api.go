@@ -109,16 +109,27 @@ func (a *API) handleListCronJobs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch jobs with sorting and pagination
-	jobs, totalCount, err := a.cron.ListCronJobs(start, limit, sortField, sortOrder)
+	dbJobs, totalCount, err := a.cron.ListCronJobs(start, limit, sortField, sortOrder)
 	if ctx.Check("Failed to list cron jobs", err) != nil {
 		return
+	}
+
+	// Convert db models to API response format
+	response := make(ListCronJobsResponse, len(dbJobs))
+	for i, job := range dbJobs {
+		response[i] = CronJob{
+			UUID:     job.UUID.String(),
+			Function: job.Function,
+			LastRun:  job.LastRun,
+			Failures: uint(job.Failures),
+		}
 	}
 
 	// Set total count in header
 	w.Header().Set("X-Total-Count", strconv.FormatInt(totalCount, 10))
 
 	// Return the jobs directly as the response body
-	ctx.Encode(jobs)
+	ctx.Encode(response)
 }
 
 func (a *API) handleGetCronJob(w http.ResponseWriter, r *http.Request) {

@@ -2,12 +2,9 @@ package api
 
 import "time"
 
-type ListCronJobsResponse struct {
-	Jobs       []CronJobData  `json:"jobs"`
-	Pagination PaginationData `json:"pagination"`
-}
+type ListCronJobsResponse = []CronJob
 
-type CronJobData struct {
+type CronJob struct {
 	UUID     string     `json:"uuid"`
 	Function string     `json:"function"`
 	LastRun  *time.Time `json:"lastRun"`
@@ -15,7 +12,7 @@ type CronJobData struct {
 }
 
 type GetCronJobResponse struct {
-	Job CronJobData `json:"job"`
+	Job CronJob `json:"job"`
 }
 
 type ListCronJobLogsResponse struct {
