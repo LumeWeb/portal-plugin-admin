@@ -7,7 +7,7 @@ type ListCronJobsResponse = []CronJob
 type CronJob struct {
 	UUID      string     `json:"uuid"`
 	Function  string     `json:"function"`
-	LastRun   *time.Time `json:"lastRun"`
+	LastRun   *time.Time `json:"last_run"`
 	Failures  uint       `json:"failures"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
