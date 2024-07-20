@@ -88,51 +88,39 @@ func (a *API) handleListCronJobs(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 
 	// Pagination
-	offset, err := strconv.Atoi(queryParams.Get("offset"))
-	if err != nil || offset < 0 {
-		offset = 0
+	start, err := strconv.Atoi(queryParams.Get("_start"))
+	if err != nil || start < 0 {
+		start = 0
 	}
-	limit, err := strconv.Atoi(queryParams.Get("limit"))
-	if err != nil || limit < 1 || limit > 100 {
-		limit = 10 // Default limit
+	end, err := strconv.Atoi(queryParams.Get("_end"))
+	if err != nil || end < start {
+		end = start + 10 // Default to 10 items if end is invalid
 	}
+	limit := end - start
 
 	// Sorting
-	sortBy := queryParams.Get("sortBy")
-	if sortBy == "" {
-		sortBy = "created_at" // Default sort field
+	sortField := queryParams.Get("_sort")
+	sortOrder := queryParams.Get("_order")
+	if sortField == "" {
+		sortField = "created_at"
 	}
-	sortOrder := queryParams.Get("sortOrder")
 	if sortOrder != "asc" && sortOrder != "desc" {
-		sortOrder = "desc" // Default sort order
+		sortOrder = "desc"
 	}
 
 	// Fetch jobs with sorting and pagination
-	jobs, totalCount, err := a.cron.ListCronJobs(offset, limit, sortBy, sortOrder)
+	jobs, totalCount, err := a.cron.ListCronJobs(start, limit, sortField, sortOrder)
 	if ctx.Check("Failed to list cron jobs", err) != nil {
 		return
 	}
 
-	response := &ListCronJobsResponse{
-		Jobs: make([]CronJobData, len(jobs)),
-		Pagination: PaginationData{
-			Offset:     offset,
-			Limit:      limit,
-			TotalItems: totalCount,
-		},
-	}
+	// Set total count in header
+	w.Header().Set("X-Total-Count", strconv.FormatInt(totalCount, 10))
 
-	for i, job := range jobs {
-		response.Jobs[i] = CronJobData{
-			UUID:     job.UUID.String(),
-			Function: job.Function,
-			LastRun:  job.LastRun,
-			Failures: job.Failures,
-		}
-	}
-
-	ctx.Encode(response)
+	// Return the jobs directly as the response body
+	ctx.Encode(jobs)
 }
+
 func (a *API) handleGetCronJob(w http.ResponseWriter, r *http.Request) {
 	ctx := httputil.Context(r, w)
 	vars := mux.Vars(r)
