@@ -146,7 +146,7 @@ func (a *API) handleGetCronJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := &GetCronJobResponse{
-		Job: CronJobData{
+		Job: CronJob{
 			UUID:     job.UUID.String(),
 			Function: job.Function,
 			LastRun:  job.LastRun,
