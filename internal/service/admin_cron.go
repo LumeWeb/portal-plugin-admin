@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"github.com/google/uuid"
 	"go.lumeweb.com/portal/core"
 	"go.lumeweb.com/portal/db"
@@ -39,10 +40,33 @@ func NewAdminCronService() (core.Service, []core.ContextBuilderOption, error) {
 	return adminCronService, opts, nil
 }
 
-func (a *AdminCronService) ListCronJobs() ([]models.CronJob, error) {
+func (a *AdminCronService) ListCronJobs(offset, limit int, sortBy, sortOrder string) ([]models.CronJob, int64, error) {
 	var jobs []models.CronJob
-	result := a.db.Find(&jobs)
-	return jobs, result.Error
+	var totalCount int64
+
+	query := a.db.Model(&models.CronJob{})
+
+	// Count total items
+	if err := db.RetryOnLock(a.db, func(db *gorm.DB) *gorm.DB {
+		return query.Count(&totalCount)
+	}); err != nil {
+		return nil, 0, err
+	}
+
+	// Apply sorting
+	query = query.Order(fmt.Sprintf("%s %s", sortBy, sortOrder))
+
+	// Apply pagination
+	query = query.Offset(offset).Limit(limit)
+
+	// Execute the query
+	if err := db.RetryOnLock(a.db, func(db *gorm.DB) *gorm.DB {
+		return query.Find(&jobs)
+	}); err != nil {
+		return nil, 0, err
+	}
+
+	return jobs, totalCount, nil
 }
 
 func (a *AdminCronService) GetCronJobByUUID(uuid uuid.UUID) (*models.CronJob, error) {

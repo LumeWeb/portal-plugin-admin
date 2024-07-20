@@ -12,6 +12,7 @@ import (
 	"go.lumeweb.com/portal/core"
 	"go.lumeweb.com/portal/middleware/swagger"
 	"net/http"
+	"strconv"
 )
 
 //go:embed swagger.yaml
@@ -83,13 +84,42 @@ func NewAPI() (core.API, []core.ContextBuilderOption, error) {
 func (a *API) handleListCronJobs(w http.ResponseWriter, r *http.Request) {
 	ctx := httputil.Context(r, w)
 
-	jobs, err := a.cron.ListCronJobs()
+	// Parse query parameters
+	queryParams := r.URL.Query()
+
+	// Pagination
+	offset, err := strconv.Atoi(queryParams.Get("offset"))
+	if err != nil || offset < 0 {
+		offset = 0
+	}
+	limit, err := strconv.Atoi(queryParams.Get("limit"))
+	if err != nil || limit < 1 || limit > 100 {
+		limit = 10 // Default limit
+	}
+
+	// Sorting
+	sortBy := queryParams.Get("sortBy")
+	if sortBy == "" {
+		sortBy = "created_at" // Default sort field
+	}
+	sortOrder := queryParams.Get("sortOrder")
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc" // Default sort order
+	}
+
+	// Fetch jobs with sorting and pagination
+	jobs, totalCount, err := a.cron.ListCronJobs(offset, limit, sortBy, sortOrder)
 	if ctx.Check("Failed to list cron jobs", err) != nil {
 		return
 	}
 
 	response := &ListCronJobsResponse{
 		Jobs: make([]CronJobData, len(jobs)),
+		Pagination: PaginationData{
+			Offset:     offset,
+			Limit:      limit,
+			TotalItems: totalCount,
+		},
 	}
 
 	for i, job := range jobs {
@@ -103,7 +133,6 @@ func (a *API) handleListCronJobs(w http.ResponseWriter, r *http.Request) {
 
 	ctx.Encode(response)
 }
-
 func (a *API) handleGetCronJob(w http.ResponseWriter, r *http.Request) {
 	ctx := httputil.Context(r, w)
 	vars := mux.Vars(r)

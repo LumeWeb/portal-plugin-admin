@@ -3,7 +3,8 @@ package api
 import "time"
 
 type ListCronJobsResponse struct {
-	Jobs []CronJobData `json:"jobs"`
+	Jobs       []CronJobData  `json:"jobs"`
+	Pagination PaginationData `json:"pagination"`
 }
 
 type CronJobData struct {
@@ -31,4 +32,10 @@ type CronJobLogData struct {
 type GetCronStatsResponse struct {
 	Total  int64 `json:"total"`
 	Failed int64 `json:"failed"`
+}
+
+type PaginationData struct {
+	Offset     int   `json:"offset"`
+	Limit      int   `json:"limit"`
+	TotalItems int64 `json:"totalItems"`
 }
