@@ -125,8 +125,11 @@ func (a *API) handleListCronJobs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Set total count in header
+	// Set X-Total-Count header
 	w.Header().Set("X-Total-Count", strconv.FormatInt(totalCount, 10))
+
+	// Set Access-Control-Expose-Headers to make X-Total-Count available to the client
+	w.Header().Set("Access-Control-Expose-Headers", "X-Total-Count")
 
 	// Return the jobs directly as the response body
 	ctx.Encode(response)
