@@ -153,7 +153,7 @@ func (a *API) handleGetCronJob(w http.ResponseWriter, r *http.Request) {
 			UUID:      job.UUID.String(),
 			Function:  job.Function,
 			LastRun:   job.LastRun,
-			Failures:  job.Failures,
+			Failures:  uint(job.Failures),
 			CreatedAt: job.CreatedAt,
 			UpdatedAt: job.UpdatedAt,
 		},

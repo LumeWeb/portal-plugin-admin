@@ -25,6 +25,10 @@ type AdminCronService struct {
 	cron core.CronService
 }
 
+func (a *AdminCronService) ID() string {
+	return ADMIN_CRON_SERVICE
+}
+
 func NewAdminCronService() (core.Service, []core.ContextBuilderOption, error) {
 	adminCronService := &AdminCronService{}
 
