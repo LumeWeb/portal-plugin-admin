@@ -53,7 +53,10 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 		Definitions: originalSchema.Definitions,
 	}
 
-	err := ctx.Config().FieldProcessor(ctx.Config().Config(), "", func(field reflect.StructField, value reflect.Value, prefix string) error {
+	err := ctx.Config().FieldProcessor(ctx.Config().Config(), "", func(field *reflect.StructField, value reflect.Value, prefix string) error {
+		if field == nil {
+			return nil
+		}
 		fieldName := field.Name
 		if prefix != "" {
 			fieldName = prefix
