@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/invopop/jsonschema"
+	"github.com/stoewer/go-strcase"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"go.lumeweb.com/portal/core"
 	"reflect"
@@ -30,6 +31,7 @@ func NewAdminSettingsService() (core.Service, []core.ContextBuilderOption, error
 			adminSettingsService.ctx = ctx
 			r := &jsonschema.Reflector{}
 			r.RequiredFromJSONSchemaTags = true
+			r.KeyNamer = strcase.SnakeCase
 			configSchema = r.ReflectFromType(reflect.TypeOf(ctx.Config().Config()))
 			configSchema, err = buildConfigSchema(ctx, configSchema)
 			if err != nil {

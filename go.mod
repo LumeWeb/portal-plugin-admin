@@ -8,6 +8,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/invopop/jsonschema v0.12.0
+	github.com/stoewer/go-strcase v1.3.0
+	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.lumeweb.com/httputil v0.0.0-20240907105629-dbffb601f2ab
 	go.lumeweb.com/portal v0.1.2-0.20241011032040-33a1ca6a15bf
 	gorm.io/gorm v1.25.12
@@ -80,7 +82,6 @@ require (
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
-	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	gitlab.com/NebulousLabs/errors v0.0.0-20200929122200-06c536cf6975 // indirect
 	gitlab.com/NebulousLabs/fastrand v0.0.0-20181126182046-603482d69e40 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.16 // indirect
