@@ -103,6 +103,8 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 		return nil, err
 	}
 
+	removeEmptyProperties(newSchema)
+
 	return newSchema, nil
 }
 
@@ -123,5 +125,30 @@ func getJSONSchemaType(t reflect.Type) string {
 		return "object"
 	default:
 		return "string" // Default to string for unknown types
+	}
+}
+func removeEmptyProperties(schema *jsonschema.Schema) {
+	if schema == nil {
+		return
+	}
+
+	if schema.Properties != nil {
+		for pair := schema.Properties.Oldest(); pair != nil; pair = pair.Next() {
+			key := pair.Key
+			value := pair.Value
+
+			if value == nil || (value.Type == "" && value.Ref == "" && value.Properties.Len() == 0) {
+				schema.Properties.Delete(key)
+			} else {
+				removeEmptyProperties(value)
+				if value.Properties.Len() == 0 && value.Type == "object" {
+					schema.Properties.Delete(key)
+				}
+			}
+		}
+	}
+
+	for _, def := range schema.Definitions {
+		removeEmptyProperties(def)
 	}
 }
