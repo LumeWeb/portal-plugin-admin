@@ -58,19 +58,6 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 			return nil
 		}
 
-		// Use the "config" tag for the field name
-		fieldName := field.Tag.Get("config")
-		if fieldName == "" {
-			fieldName = strings.ToLower(field.Name)
-		}
-
-		fullFieldName := prefix
-		if prefix != "" {
-			fullFieldName = prefix + "." + fieldName
-		} else {
-			fullFieldName = fieldName
-		}
-
 		fieldSchema := &jsonschema.Schema{Type: getJSONSchemaType(field.Type)}
 
 		// Only use $ref for struct fields
@@ -84,7 +71,7 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 		}
 
 		// Build nested structure
-		parts := strings.Split(fullFieldName, ".")
+		parts := strings.Split(prefix, ".")
 		currentSchema := newSchema
 		for i, part := range parts {
 			if i == len(parts)-1 {
