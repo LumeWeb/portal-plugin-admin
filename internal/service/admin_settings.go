@@ -160,6 +160,43 @@ func buildFieldSchema(t reflect.Type, definitions map[string]*jsonschema.Schema)
 	return schema, nil
 }
 
+func removeEmptyProperties(schema *jsonschema.Schema) {
+	if schema == nil || schema.Properties == nil {
+		return
+	}
+
+	for pair := schema.Properties.Oldest(); pair != nil; pair = pair.Next() {
+		if pair.Value.Ref != "" {
+			// If it's a reference, remove any properties
+			pair.Value.Properties = nil
+		} else {
+			removeEmptyProperties(pair.Value)
+		}
+
+		if pair.Value.Properties != nil && pair.Value.Properties.Len() == 0 {
+			pair.Value.Properties = nil
+		}
+	}
+
+	// Remove empty definitions
+	for key, def := range schema.Definitions {
+		removeEmptyProperties(def)
+		if def.Properties != nil && def.Properties.Len() == 0 {
+			def.Properties = nil
+		}
+		if isEmptySchema(def) {
+			delete(schema.Definitions, key)
+		}
+	}
+}
+
+func isEmptySchema(schema *jsonschema.Schema) bool {
+	return schema.Properties == nil &&
+		schema.Items == nil &&
+		schema.AdditionalProperties == nil &&
+		schema.Ref == ""
+}
+
 func getJSONSchemaType(t reflect.Type) string {
 	switch t.Kind() {
 	case reflect.Bool:
@@ -177,25 +214,5 @@ func getJSONSchemaType(t reflect.Type) string {
 		return "object"
 	default:
 		return "string" // Default to string for unknown types
-	}
-}
-
-func removeEmptyProperties(schema *jsonschema.Schema) {
-	if schema == nil {
-		return
-	}
-
-	if schema.Properties != nil {
-		for pair := schema.Properties.Oldest(); pair != nil; pair = pair.Next() {
-			value := pair.Value
-			if value.Properties != nil && value.Properties.Len() == 0 {
-				value.Properties = nil
-			}
-			removeEmptyProperties(value)
-		}
-	}
-
-	for _, def := range schema.Definitions {
-		removeEmptyProperties(def)
 	}
 }
