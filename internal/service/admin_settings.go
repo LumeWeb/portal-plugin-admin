@@ -58,14 +58,18 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 			return nil
 		}
 
-		fieldSchema := &jsonschema.Schema{Type: getJSONSchemaType(field.Type)}
+		fieldSchema := &jsonschema.Schema{
+			Type:       getJSONSchemaType(field.Type),
+			Properties: orderedmap.New[string, *jsonschema.Schema](),
+		}
 
 		// Only use $ref for struct fields
 		if field.Type.Kind() == reflect.Struct {
 			structName := field.Type.Name()
 			if _, ok := originalSchema.Definitions[structName]; ok {
 				fieldSchema = &jsonschema.Schema{
-					Ref: "#/$defs/" + structName,
+					Ref:        "#/$defs/" + structName,
+					Properties: orderedmap.New[string, *jsonschema.Schema](),
 				}
 			}
 		}
