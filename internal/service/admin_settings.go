@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"github.com/invopop/jsonschema"
 	"github.com/stoewer/go-strcase"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
@@ -62,27 +63,35 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 
 		fieldSchema, err := buildFieldSchema(field.Type, originalSchema.Definitions)
 		if err != nil {
-			return err
+			return fmt.Errorf("error building field schema for %s: %v", field.Name, err)
 		}
 
 		// Build nested structure
 		parts := strings.Split(prefix, ".")
 		currentSchema := newSchema
 		for i, part := range parts {
+			snakeCasePart := strcase.SnakeCase(part)
+			if snakeCasePart == "" {
+				return fmt.Errorf("empty property name after conversion to snake case: original=%s", part)
+			}
+
 			if i == len(parts)-1 {
 				// This is the last part, set the actual field
-				currentSchema.Properties.Set(strcase.SnakeCase(part), fieldSchema)
+				if currentSchema.Properties == nil {
+					currentSchema.Properties = orderedmap.New[string, *jsonschema.Schema]()
+				}
+				currentSchema.Properties.Set(snakeCasePart, fieldSchema)
 			} else {
 				// This is an intermediate part, ensure the nested structure exists
 				var nextSchema *jsonschema.Schema
-				if existingSchema, exists := currentSchema.Properties.Get(strcase.SnakeCase(part)); exists {
+				if existingSchema, exists := currentSchema.Properties.Get(snakeCasePart); exists {
 					nextSchema = existingSchema
 				} else {
 					nextSchema = &jsonschema.Schema{
 						Type:       "object",
 						Properties: orderedmap.New[string, *jsonschema.Schema](),
 					}
-					currentSchema.Properties.Set(strcase.SnakeCase(part), nextSchema)
+					currentSchema.Properties.Set(snakeCasePart, nextSchema)
 				}
 				currentSchema = nextSchema
 			}
@@ -92,7 +101,7 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error processing fields: %v", err)
 	}
 
 	removeEmptyProperties(newSchema)
