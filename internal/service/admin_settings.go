@@ -59,20 +59,10 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 		if field.Type == nil {
 			return nil
 		}
-		fieldSchema := &jsonschema.Schema{
-			Type:       getJSONSchemaType(field.Type),
-			Properties: orderedmap.New[string, *jsonschema.Schema](),
-		}
 
-		// Only use $ref for struct fields
-		if field.Type.Kind() == reflect.Struct {
-			structName := field.Type.Name()
-			if _, ok := originalSchema.Definitions[structName]; ok {
-				fieldSchema = &jsonschema.Schema{
-					Ref:        "#/$defs/" + structName,
-					Properties: orderedmap.New[string, *jsonschema.Schema](),
-				}
-			}
+		fieldSchema, err := buildFieldSchema(field.Type, originalSchema.Definitions)
+		if err != nil {
+			return err
 		}
 
 		// Build nested structure
@@ -81,18 +71,18 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 		for i, part := range parts {
 			if i == len(parts)-1 {
 				// This is the last part, set the actual field
-				currentSchema.Properties.Set(part, fieldSchema)
+				currentSchema.Properties.Set(strcase.SnakeCase(part), fieldSchema)
 			} else {
 				// This is an intermediate part, ensure the nested structure exists
 				var nextSchema *jsonschema.Schema
-				if existingSchema, exists := currentSchema.Properties.Get(part); exists {
+				if existingSchema, exists := currentSchema.Properties.Get(strcase.SnakeCase(part)); exists {
 					nextSchema = existingSchema
 				} else {
 					nextSchema = &jsonschema.Schema{
 						Type:       "object",
 						Properties: orderedmap.New[string, *jsonschema.Schema](),
 					}
-					currentSchema.Properties.Set(part, nextSchema)
+					currentSchema.Properties.Set(strcase.SnakeCase(part), nextSchema)
 				}
 				currentSchema = nextSchema
 			}
@@ -108,6 +98,57 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 	removeEmptyProperties(newSchema)
 
 	return newSchema, nil
+}
+
+func buildFieldSchema(t reflect.Type, definitions map[string]*jsonschema.Schema) (*jsonschema.Schema, error) {
+	// If it's a pointer, get the underlying type
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	// Check if this type has a definition
+	if _, ok := definitions[t.Name()]; ok {
+		// If it has a definition, just use the $ref
+		return &jsonschema.Schema{
+			Ref: "#/$defs/" + t.Name(),
+		}, nil
+	}
+
+	// If it doesn't have a definition, create a new schema
+	schema := &jsonschema.Schema{
+		Type: getJSONSchemaType(t),
+	}
+
+	// Handle specific types
+	switch t.Kind() {
+	case reflect.Struct:
+		schema.Properties = orderedmap.New[string, *jsonschema.Schema]()
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i)
+			if field.PkgPath != "" && !field.Anonymous { // unexported
+				continue
+			}
+			fieldSchema, err := buildFieldSchema(field.Type, definitions)
+			if err != nil {
+				return nil, err
+			}
+			schema.Properties.Set(strcase.SnakeCase(field.Name), fieldSchema)
+		}
+	case reflect.Slice, reflect.Array:
+		itemSchema, err := buildFieldSchema(t.Elem(), definitions)
+		if err != nil {
+			return nil, err
+		}
+		schema.Items = itemSchema
+	case reflect.Map:
+		valueSchema, err := buildFieldSchema(t.Elem(), definitions)
+		if err != nil {
+			return nil, err
+		}
+		schema.AdditionalProperties = valueSchema
+	}
+
+	return schema, nil
 }
 
 func getJSONSchemaType(t reflect.Type) string {
@@ -129,6 +170,7 @@ func getJSONSchemaType(t reflect.Type) string {
 		return "string" // Default to string for unknown types
 	}
 }
+
 func removeEmptyProperties(schema *jsonschema.Schema) {
 	if schema == nil {
 		return
