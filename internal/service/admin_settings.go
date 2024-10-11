@@ -134,17 +134,11 @@ func removeEmptyProperties(schema *jsonschema.Schema) {
 
 	if schema.Properties != nil {
 		for pair := schema.Properties.Oldest(); pair != nil; pair = pair.Next() {
-			key := pair.Key
 			value := pair.Value
-
-			if value == nil || (value.Type == "" && value.Ref == "" && value.Properties.Len() == 0) {
-				schema.Properties.Delete(key)
-			} else {
-				removeEmptyProperties(value)
-				if value.Properties.Len() == 0 && value.Type == "object" {
-					schema.Properties.Delete(key)
-				}
+			if value.Properties != nil && value.Properties.Len() == 0 {
+				value.Properties = nil
 			}
+			removeEmptyProperties(value)
 		}
 	}
 
