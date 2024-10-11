@@ -58,7 +58,12 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 			return nil
 		}
 
-		fieldName := field.Name
+		// Use the "config" tag for the field name
+		fieldName := field.Tag.Get("config")
+		if fieldName == "" {
+			fieldName = strings.ToLower(field.Name)
+		}
+
 		fullFieldName := prefix
 		if prefix != "" {
 			fullFieldName = prefix + "." + fieldName
@@ -66,10 +71,7 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 			fullFieldName = fieldName
 		}
 
-		fieldSchema := findSchemaForField(originalSchema, fullFieldName)
-		if fieldSchema == nil {
-			fieldSchema = &jsonschema.Schema{Type: getJSONSchemaType(field.Type)}
-		}
+		fieldSchema := &jsonschema.Schema{Type: getJSONSchemaType(field.Type)}
 
 		// Only use $ref for struct fields
 		if field.Type.Kind() == reflect.Struct {
@@ -83,24 +85,24 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 
 		// Build nested structure
 		parts := strings.Split(fullFieldName, ".")
-		currentProperties := newSchema.Properties
+		currentSchema := newSchema
 		for i, part := range parts {
 			if i == len(parts)-1 {
 				// This is the last part, set the actual field
-				currentProperties.Set(part, fieldSchema)
+				currentSchema.Properties.Set(part, fieldSchema)
 			} else {
 				// This is an intermediate part, ensure the nested structure exists
 				var nextSchema *jsonschema.Schema
-				if existingSchema, exists := currentProperties.Get(part); exists {
+				if existingSchema, exists := currentSchema.Properties.Get(part); exists {
 					nextSchema = existingSchema
 				} else {
 					nextSchema = &jsonschema.Schema{
 						Type:       "object",
 						Properties: orderedmap.New[string, *jsonschema.Schema](),
 					}
-					currentProperties.Set(part, nextSchema)
+					currentSchema.Properties.Set(part, nextSchema)
 				}
-				currentProperties = nextSchema.Properties
+				currentSchema = nextSchema
 			}
 		}
 
@@ -112,31 +114,6 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 	}
 
 	return newSchema, nil
-}
-
-func findSchemaForField(schema *jsonschema.Schema, fieldName string) *jsonschema.Schema {
-	parts := strings.Split(fieldName, ".")
-	currentSchema := schema
-
-	for _, part := range parts {
-		if currentSchema.Properties != nil {
-			if prop, ok := currentSchema.Properties.Get(part); ok {
-				currentSchema = prop
-				continue
-			}
-		}
-
-		// Check in definitions
-		if def, ok := schema.Definitions[part]; ok {
-			currentSchema = def
-			continue
-		}
-
-		// If we can't find the field, return nil
-		return nil
-	}
-
-	return currentSchema
 }
 
 func getJSONSchemaType(t reflect.Type) string {
