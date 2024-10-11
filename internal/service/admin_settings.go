@@ -57,30 +57,52 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 		if field == nil {
 			return nil
 		}
+
 		fieldName := field.Name
+		fullFieldName := prefix
 		if prefix != "" {
-			fieldName = prefix
+			fullFieldName = prefix + "." + fieldName
+		} else {
+			fullFieldName = fieldName
 		}
 
-		fieldSchema := findSchemaForField(originalSchema, fieldName)
+		fieldSchema := findSchemaForField(originalSchema, fullFieldName)
 		if fieldSchema == nil {
-			// If we can't find a schema, create a basic one based on the field type
 			fieldSchema = &jsonschema.Schema{Type: getJSONSchemaType(field.Type)}
 		}
 
-		// Check if the field is a struct and has a corresponding definition
+		// Only use $ref for struct fields
 		if field.Type.Kind() == reflect.Struct {
 			structName := field.Type.Name()
 			if _, ok := originalSchema.Definitions[structName]; ok {
-				// Use a reference to the definition instead of inline schema
 				fieldSchema = &jsonschema.Schema{
 					Ref: "#/$defs/" + structName,
 				}
 			}
 		}
 
-		// Add the field to the properties
-		newSchema.Properties.Set(fieldName, fieldSchema)
+		// Build nested structure
+		parts := strings.Split(fullFieldName, ".")
+		currentProperties := newSchema.Properties
+		for i, part := range parts {
+			if i == len(parts)-1 {
+				// This is the last part, set the actual field
+				currentProperties.Set(part, fieldSchema)
+			} else {
+				// This is an intermediate part, ensure the nested structure exists
+				var nextSchema *jsonschema.Schema
+				if existingSchema, exists := currentProperties.Get(part); exists {
+					nextSchema = existingSchema
+				} else {
+					nextSchema = &jsonschema.Schema{
+						Type:       "object",
+						Properties: orderedmap.New[string, *jsonschema.Schema](),
+					}
+					currentProperties.Set(part, nextSchema)
+				}
+				currentProperties = nextSchema.Properties
+			}
+		}
 
 		return nil
 	})
