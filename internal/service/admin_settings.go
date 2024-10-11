@@ -53,11 +53,7 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 		Definitions: originalSchema.Definitions,
 	}
 
-	err := ctx.Config().FieldProcessor(ctx.Config().Config(), "", func(field *reflect.StructField, value reflect.Value, prefix string) error {
-		if field == nil {
-			return nil
-		}
-
+	err := ctx.Config().FieldProcessor(ctx.Config().Config(), "", func(_ *reflect.StructField, field reflect.StructField, value reflect.Value, prefix string) error {
 		fieldSchema := &jsonschema.Schema{
 			Type:       getJSONSchemaType(field.Type),
 			Properties: orderedmap.New[string, *jsonschema.Schema](),

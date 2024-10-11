@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/invopop/jsonschema v0.12.0
 	go.lumeweb.com/httputil v0.0.0-20240907105629-dbffb601f2ab
-	go.lumeweb.com/portal v0.1.2-0.20241011020138-2c8b44df2949
+	go.lumeweb.com/portal v0.1.2-0.20241011032040-33a1ca6a15bf
 	gorm.io/gorm v1.25.12
 )
 
