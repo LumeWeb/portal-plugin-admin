@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var _ core.Service = &AdminCronService{}
+var _ core.Service = (*AdminCronService)(nil)
 
 type CronJobStats struct {
 	Total  int64

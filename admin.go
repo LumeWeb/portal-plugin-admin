@@ -23,6 +23,14 @@ func init() {
 					},
 					Depends: []string{core.CRON_SERVICE},
 				},
+
+				{
+					ID: service.ADMIN_SETTINGS_SERVICE,
+					Factory: func() (core.Service, []core.ContextBuilderOption, error) {
+						return service.NewAdminSettingsService()
+					},
+					Depends: []string{core.CONFIG_SERVICE},
+				},
 			}, nil
 		},
 	})
