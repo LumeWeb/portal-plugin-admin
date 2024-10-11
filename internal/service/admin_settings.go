@@ -54,6 +54,9 @@ func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*js
 	}
 
 	err := ctx.Config().FieldProcessor(ctx.Config().Config(), "", func(_ *reflect.StructField, field reflect.StructField, value reflect.Value, prefix string) error {
+		if field.Type == nil {
+			return nil
+		}
 		fieldSchema := &jsonschema.Schema{
 			Type:       getJSONSchemaType(field.Type),
 			Properties: orderedmap.New[string, *jsonschema.Schema](),
