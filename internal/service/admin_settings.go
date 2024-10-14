@@ -58,41 +58,41 @@ type schemaBuilder struct {
 }
 
 func (sb *schemaBuilder) buildSchema(_ *reflect.StructField, field reflect.StructField, value reflect.Value, prefix string) error {
-	var fieldName string
-
-	if field.Tag.Get("config") != "" {
-		fieldName = field.Tag.Get("config")
-	} else {
-		fieldName = strcase.SnakeCase(field.Name)
-	}
-
-	if prefix != "" {
-		fieldName = prefix + "." + fieldName
-	}
+	fieldName := getFieldName(field)
+	fullPath := buildFullPath(prefix, fieldName)
 
 	fieldSchema := sb.getFieldSchema(value)
 	if fieldSchema != nil {
-		sb.setSchemaProperty(fieldName, fieldSchema)
+		sb.setSchemaProperty(fullPath, fieldSchema)
 	}
 
 	return nil
 }
 
+func getFieldName(field reflect.StructField) string {
+	if configTag := field.Tag.Get("config"); configTag != "" {
+		return configTag
+	}
+	return strcase.SnakeCase(field.Name)
+}
+
+func buildFullPath(prefix, fieldName string) string {
+	if prefix == "" {
+		return fieldName
+	}
+	return prefix + "." + fieldName
+}
+
 func (sb *schemaBuilder) setSchemaProperty(path string, schema *jsonschema.Schema) {
-	current := sb.schema
 	parts := strings.Split(path, ".")
+	current := sb.schema
+
 	for i, part := range parts {
 		if i == len(parts)-1 {
 			// This is the last part, set the schema
-			if current.Properties == nil {
-				current.Properties = orderedmap.New[string, *jsonschema.Schema]()
-			}
 			current.Properties.Set(part, schema)
 		} else {
 			// This is an intermediate part, ensure the nested structure exists
-			if current.Properties == nil {
-				current.Properties = orderedmap.New[string, *jsonschema.Schema]()
-			}
 			next, exists := current.Properties.Get(part)
 			if !exists {
 				next = &jsonschema.Schema{
@@ -132,9 +132,11 @@ func (sb *schemaBuilder) getFieldSchema(v reflect.Value) *jsonschema.Schema {
 		schema.Properties = orderedmap.New[string, *jsonschema.Schema]()
 		for i := 0; i < v.NumField(); i++ {
 			field := v.Type().Field(i)
-			fieldSchema := sb.getFieldSchema(v.Field(i))
+			fieldValue := v.Field(i)
+			fieldName := getFieldName(field)
+			fieldSchema := sb.getFieldSchema(fieldValue)
 			if fieldSchema != nil {
-				schema.Properties.Set(strcase.SnakeCase(field.Name), fieldSchema)
+				schema.Properties.Set(fieldName, fieldSchema)
 			}
 		}
 	case reflect.Ptr:
