@@ -5,6 +5,7 @@ import (
 	"github.com/stoewer/go-strcase"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"go.lumeweb.com/portal/core"
+	"gopkg.in/yaml.v3"
 	"reflect"
 	"strings"
 )
@@ -61,7 +62,7 @@ func (sb *schemaBuilder) buildSchema(_ *reflect.StructField, field reflect.Struc
 	fieldName := getFieldName(field)
 	fullPath := buildFullPath(prefix, fieldName)
 
-	fieldSchema := sb.getFieldSchema(value)
+	fieldSchema := sb.getFieldSchema(field, value)
 	if fieldSchema != nil {
 		sb.setSchemaProperty(fullPath, fieldSchema)
 	}
@@ -106,7 +107,7 @@ func (sb *schemaBuilder) setSchemaProperty(path string, schema *jsonschema.Schem
 	}
 }
 
-func (sb *schemaBuilder) getFieldSchema(v reflect.Value) *jsonschema.Schema {
+func (sb *schemaBuilder) getFieldSchema(field reflect.StructField, v reflect.Value) *jsonschema.Schema {
 	schema := &jsonschema.Schema{}
 
 	switch v.Kind() {
@@ -122,27 +123,64 @@ func (sb *schemaBuilder) getFieldSchema(v reflect.Value) *jsonschema.Schema {
 	case reflect.Slice, reflect.Array:
 		schema.Type = "array"
 		if v.Len() > 0 {
-			schema.Items = sb.getFieldSchema(v.Index(0))
+			schema.Items = sb.getFieldSchema(reflect.StructField{}, v.Index(0))
 		}
 	case reflect.Map:
 		schema.Type = "object"
 		schema.AdditionalProperties = jsonschema.TrueSchema
 	case reflect.Struct:
+		// Check if the struct implements MarshalYAML
+		if marshaler, ok := v.Interface().(yaml.Marshaler); ok {
+			yamlData, err := marshaler.MarshalYAML()
+			if err == nil {
+				return sb.handleYAMLMarshaled(yamlData)
+			}
+		}
+
 		schema.Type = "object"
 		schema.Properties = orderedmap.New[string, *jsonschema.Schema]()
 		for i := 0; i < v.NumField(); i++ {
 			field := v.Type().Field(i)
 			fieldValue := v.Field(i)
 			fieldName := getFieldName(field)
-			fieldSchema := sb.getFieldSchema(fieldValue)
+			fieldSchema := sb.getFieldSchema(field, fieldValue)
 			if fieldSchema != nil {
 				schema.Properties.Set(fieldName, fieldSchema)
 			}
 		}
 	case reflect.Ptr:
 		if !v.IsNil() {
-			return sb.getFieldSchema(v.Elem())
+			return sb.getFieldSchema(field, v.Elem())
 		}
+	}
+
+	// Handle special cases like "true" schema
+	if v.Kind() == reflect.Bool && v.Bool() {
+		return jsonschema.TrueSchema
+	}
+
+	return schema
+}
+
+func (sb *schemaBuilder) handleYAMLMarshaled(data interface{}) *jsonschema.Schema {
+	schema := &jsonschema.Schema{
+		Type:       "object",
+		Properties: orderedmap.New[string, *jsonschema.Schema](),
+	}
+
+	switch v := data.(type) {
+	case map[string]interface{}:
+		for key, val := range v {
+			schema.Properties.Set(key, sb.getFieldSchema(reflect.StructField{}, reflect.ValueOf(val)))
+		}
+	case []interface{}:
+		schema.Type = "array"
+		if len(v) > 0 {
+			schema.Items = sb.getFieldSchema(reflect.StructField{}, reflect.ValueOf(v[0]))
+		}
+	default:
+		// If it's not a map or slice, treat it as a simple value
+		return sb.getFieldSchema(reflect.StructField{}, reflect.ValueOf(v))
 	}
 
 	return schema
