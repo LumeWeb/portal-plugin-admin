@@ -49,6 +49,15 @@ func (a *AdminSettingsService) ListSettings() *jsonschema.Schema {
 	return configSchema
 }
 
+func (a *AdminSettingsService) ListSettings1() *jsonschema.Schema {
+	r := &jsonschema.Reflector{}
+	r.RequiredFromJSONSchemaTags = true
+	r.KeyNamer = strcase.SnakeCase
+	configSchema = r.ReflectFromType(reflect.TypeOf(a.ctx.Config().Config()))
+
+	return configSchema
+}
+
 func buildConfigSchema(ctx core.Context, originalSchema *jsonschema.Schema) (*jsonschema.Schema, error) {
 	newSchema := &jsonschema.Schema{
 		Type:        "object",

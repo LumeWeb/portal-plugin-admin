@@ -46,6 +46,7 @@ func (a API) Configure(router *mux.Router) error {
 	router.HandleFunc("/api/cron/stats", a.handleGetCronStats).Methods("GET")
 
 	router.HandleFunc("/api/settings", a.handleListSettings).Methods("GET")
+	router.HandleFunc("/api/settings1", a.handleListSettings1).Methods("GET")
 	return nil
 }
 
