@@ -29,6 +29,8 @@ func NewAdminSettingsService() (core.Service, []core.ContextBuilderOption, error
 			adminSettingsService.ctx = ctx
 
 			schema := &jsonschema.Schema{
+				Version:    "https://json-schema.org/draft/2020-12/schema",
+				ID:         "https://go.lumeweb.com/portal/config/config",
 				Type:       "object",
 				Properties: orderedmap.New[string, *jsonschema.Schema](),
 			}
@@ -82,9 +84,15 @@ func (sb *schemaBuilder) setSchemaProperty(path string, schema *jsonschema.Schem
 	for i, part := range parts {
 		if i == len(parts)-1 {
 			// This is the last part, set the schema
+			if current.Properties == nil {
+				current.Properties = orderedmap.New[string, *jsonschema.Schema]()
+			}
 			current.Properties.Set(part, schema)
 		} else {
 			// This is an intermediate part, ensure the nested structure exists
+			if current.Properties == nil {
+				current.Properties = orderedmap.New[string, *jsonschema.Schema]()
+			}
 			next, exists := current.Properties.Get(part)
 			if !exists {
 				next = &jsonschema.Schema{
@@ -122,12 +130,17 @@ func (sb *schemaBuilder) getFieldSchema(v reflect.Value) *jsonschema.Schema {
 	case reflect.Struct:
 		schema.Type = "object"
 		schema.Properties = orderedmap.New[string, *jsonschema.Schema]()
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Type().Field(i)
+			fieldSchema := sb.getFieldSchema(v.Field(i))
+			if fieldSchema != nil {
+				schema.Properties.Set(strcase.SnakeCase(field.Name), fieldSchema)
+			}
+		}
 	case reflect.Ptr:
 		if !v.IsNil() {
 			return sb.getFieldSchema(v.Elem())
 		}
-	default:
-		return nil
 	}
 
 	return schema
