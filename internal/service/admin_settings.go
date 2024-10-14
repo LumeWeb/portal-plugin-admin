@@ -129,6 +129,10 @@ func (sb *schemaBuilder) getFieldSchema(field reflect.StructField, v reflect.Val
 		schema.Type = "object"
 		schema.AdditionalProperties = jsonschema.TrueSchema
 	case reflect.Struct:
+		if v.Type().Name() == "Identity" {
+			// Special handling for Identity type
+			return &jsonschema.Schema{Type: "string"}
+		}
 		// Check if the struct implements MarshalYAML
 		if marshaler, ok := v.Interface().(yaml.Marshaler); ok {
 			yamlData, err := marshaler.MarshalYAML()
@@ -154,22 +158,16 @@ func (sb *schemaBuilder) getFieldSchema(field reflect.StructField, v reflect.Val
 		}
 	}
 
-	// Handle special cases like "true" schema
-	if v.Kind() == reflect.Bool && v.Bool() {
-		return jsonschema.TrueSchema
-	}
-
 	return schema
 }
 
 func (sb *schemaBuilder) handleYAMLMarshaled(data interface{}) *jsonschema.Schema {
-	schema := &jsonschema.Schema{
-		Type:       "object",
-		Properties: orderedmap.New[string, *jsonschema.Schema](),
-	}
+	schema := &jsonschema.Schema{}
 
 	switch v := data.(type) {
 	case map[string]interface{}:
+		schema.Type = "object"
+		schema.Properties = orderedmap.New[string, *jsonschema.Schema]()
 		for key, val := range v {
 			schema.Properties.Set(key, sb.getFieldSchema(reflect.StructField{}, reflect.ValueOf(val)))
 		}
