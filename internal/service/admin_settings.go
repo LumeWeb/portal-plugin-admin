@@ -129,10 +129,6 @@ func (sb *schemaBuilder) getFieldSchema(field reflect.StructField, v reflect.Val
 		schema.Type = "object"
 		schema.AdditionalProperties = jsonschema.TrueSchema
 	case reflect.Struct:
-		if v.Type().Name() == "Identity" {
-			// Special handling for Identity type
-			return &jsonschema.Schema{Type: "string"}
-		}
 		// Check if the struct implements MarshalYAML
 		if marshaler, ok := v.Interface().(yaml.Marshaler); ok {
 			yamlData, err := marshaler.MarshalYAML()
