@@ -52,6 +52,12 @@ func (a *API) handleUpdateSetting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Verify the data type before updating
+	if err := verifySettingDataType(setting, data.Value); err != nil {
+		_ = ctx.Error(err, http.StatusBadRequest)
+		return
+	}
+
 	if err := a.settings.UpdateSetting(
 		&messages.SettingsItem{
 			Key:   setting.Key,
@@ -62,4 +68,28 @@ func (a *API) handleUpdateSetting(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func verifySettingDataType(setting *messages.SettingsItem, newValue interface{}) error {
+	switch setting.Value.(type) {
+	case string:
+		if _, ok := newValue.(string); !ok {
+			return fmt.Errorf("invalid data type: expected string")
+		}
+	case int:
+		if _, ok := newValue.(int); !ok {
+			return fmt.Errorf("invalid data type: expected int")
+		}
+	case float64:
+		if _, ok := newValue.(float64); !ok {
+			return fmt.Errorf("invalid data type: expected float64")
+		}
+	case bool:
+		if _, ok := newValue.(bool); !ok {
+			return fmt.Errorf("invalid data type: expected bool")
+		}
+	default:
+		return fmt.Errorf("unsupported setting type")
+	}
+	return nil
 }
