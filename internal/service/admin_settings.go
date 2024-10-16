@@ -85,7 +85,7 @@ func buildFullPath(prefix, fieldName string) string {
 	if prefix == "" {
 		return fieldName
 	}
-	return prefix + "." + fieldName
+	return prefix
 }
 
 func (sb *schemaBuilder) setSchemaProperty(path string, schema *jsonschema.Schema) {
