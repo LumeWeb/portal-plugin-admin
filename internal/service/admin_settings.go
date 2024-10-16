@@ -156,10 +156,6 @@ func (sb *schemaBuilder) getFieldSchema(field reflect.StructField, v reflect.Val
 			}
 		}
 	case reflect.Interface:
-		if !v.IsNil() {
-			return sb.getFieldSchema(field, v.Elem())
-		}
-
 	case reflect.Ptr:
 		if !v.IsNil() {
 			return sb.getFieldSchema(field, v.Elem())
