@@ -4,6 +4,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"go.lumeweb.com/httputil"
+	"go.lumeweb.com/portal-plugin-admin/internal/api/messages"
 	"net/http"
 	"strconv"
 )
@@ -42,9 +43,9 @@ func (a *API) handleListCronJobs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert db models to API response format
-	response := make(ListCronJobsResponse, len(dbJobs))
+	response := make(messages.ListCronJobsResponse, len(dbJobs))
 	for i, job := range dbJobs {
-		response[i] = CronJob{
+		response[i] = messages.CronJob{
 			UUID:     job.UUID.String(),
 			Function: job.Function,
 			LastRun:  job.LastRun,
@@ -75,8 +76,8 @@ func (a *API) handleGetCronJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := &GetCronJobResponse{
-		Job: CronJob{
+	response := &messages.GetCronJobResponse{
+		Job: messages.CronJob{
 			UUID:      job.UUID.String(),
 			Function:  job.Function,
 			LastRun:   job.LastRun,
@@ -107,12 +108,12 @@ func (a *API) handleListCronJobLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := &ListCronJobLogsResponse{
-		Logs: make([]CronJobLogData, len(logs)),
+	response := &messages.ListCronJobLogsResponse{
+		Logs: make([]messages.CronJobLogData, len(logs)),
 	}
 
 	for i, log := range logs {
-		response.Logs[i] = CronJobLogData{
+		response.Logs[i] = messages.CronJobLogData{
 			ID:        log.ID,
 			Type:      string(log.Type),
 			Message:   log.Message,
@@ -131,7 +132,7 @@ func (a *API) handleGetCronStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := &GetCronStatsResponse{
+	response := &messages.GetCronStatsResponse{
 		Total:  stats.Total,
 		Failed: stats.Failed,
 	}
