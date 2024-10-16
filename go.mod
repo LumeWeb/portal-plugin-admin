@@ -11,7 +11,7 @@ require (
 	github.com/stoewer/go-strcase v1.3.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.lumeweb.com/httputil v0.0.0-20240907105629-dbffb601f2ab
-	go.lumeweb.com/portal v0.1.2-0.20241011032040-33a1ca6a15bf
+	go.lumeweb.com/portal v0.1.2-0.20241016073622-a54837c0f85f
 	gorm.io/gorm v1.25.12
 )
 
@@ -19,16 +19,16 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/AfterShip/email-verifier v1.4.1 // indirect
 	github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da // indirect
-	github.com/aws/aws-sdk-go-v2 v1.32.1 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.32.2 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.6 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.20 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.20 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.20 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.21 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.21 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.21 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.4.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.18.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.65.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.4.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.18.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.65.3 // indirect
 	github.com/aws/smithy-go v1.22.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
@@ -75,7 +75,7 @@ require (
 	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pquerna/otp v1.4.0 // indirect
-	github.com/redis/go-redis/v9 v9.6.1 // indirect
+	github.com/redis/go-redis/v9 v9.6.2 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/samber/lo v1.47.0 // indirect

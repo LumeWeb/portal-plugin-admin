@@ -2,8 +2,10 @@ package service
 
 import (
 	"github.com/invopop/jsonschema"
+	"github.com/samber/lo"
 	"github.com/stoewer/go-strcase"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
+	"go.lumeweb.com/portal-plugin-admin/internal/api"
 	"go.lumeweb.com/portal/core"
 	"gopkg.in/yaml.v3"
 	"reflect"
@@ -50,8 +52,17 @@ func NewAdminSettingsService() (core.Service, []core.ContextBuilderOption, error
 	return adminSettingsService, opts, nil
 }
 
-func (a *AdminSettingsService) ListSettings() *jsonschema.Schema {
+func (a *AdminSettingsService) GetSchema() *jsonschema.Schema {
 	return configSchema
+}
+
+func (a *AdminSettingsService) GetSettings() []*api.SettingsItem {
+	return lo.MapToSlice(a.ctx.Config().All(), func(k string, v any) *api.SettingsItem {
+		return &api.SettingsItem{
+			Key:   k,
+			Value: v,
+		}
+	})
 }
 
 type schemaBuilder struct {

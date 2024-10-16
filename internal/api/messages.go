@@ -38,3 +38,8 @@ type PaginationData struct {
 	Limit      int   `json:"limit"`
 	TotalItems int64 `json:"totalItems"`
 }
+
+type SettingsItem struct {
+	Key   string `json:"key"`
+	Value any    `json:"value"`
+}

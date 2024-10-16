@@ -45,6 +45,7 @@ func (a API) Configure(router *mux.Router) error {
 	router.HandleFunc("/api/cron/jobs/{uuid}/logs", a.handleListCronJobLogs).Methods("GET")
 	router.HandleFunc("/api/cron/stats", a.handleGetCronStats).Methods("GET")
 
+	router.HandleFunc("/api/settings/schema", a.handleGetSchema).Methods("GET")
 	router.HandleFunc("/api/settings", a.handleListSettings).Methods("GET")
 	return nil
 }
