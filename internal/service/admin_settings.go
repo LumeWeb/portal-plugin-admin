@@ -134,7 +134,6 @@ func (sb *schemaBuilder) getFieldSchema(field reflect.StructField, v reflect.Val
 		}
 	case reflect.Map:
 		schema.Type = "object"
-		schema.AdditionalProperties = jsonschema.TrueSchema
 
 	case reflect.Struct:
 		// Check if the struct implements MarshalYAML
