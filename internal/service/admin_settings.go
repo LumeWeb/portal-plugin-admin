@@ -156,11 +156,7 @@ func (sb *schemaBuilder) getFieldSchema(field reflect.StructField, v reflect.Val
 			}
 		}
 	case reflect.Interface:
-		if v.IsNil() {
-			// For nil interfaces, we can't determine the type
-			schema.Type = "null"
-		} else {
-			// For non-nil interfaces, we need to get the actual value it contains
+		if !v.IsNil() {
 			return sb.getFieldSchema(field, v.Elem())
 		}
 
