@@ -65,6 +65,26 @@ func (a *AdminSettingsService) GetSettings() []*messages.SettingsItem {
 	})
 }
 
+func (a *AdminSettingsService) GetSetting(key string) *messages.SettingsItem {
+	exists := a.ctx.Config().Exists(key)
+	if !exists {
+		return nil
+	}
+	return &messages.SettingsItem{
+		Key:   key,
+		Value: a.ctx.Config().Get(key),
+	}
+}
+
+func (a *AdminSettingsService) UpdateSetting(setting *messages.SettingsItem) error {
+	err := a.ctx.Config().Update(setting.Key, setting.Value)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type schemaBuilder struct {
 	schema *jsonschema.Schema
 }

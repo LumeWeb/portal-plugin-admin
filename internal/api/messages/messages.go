@@ -43,3 +43,7 @@ type SettingsItem struct {
 	Key   string `json:"key"`
 	Value any    `json:"value"`
 }
+
+type SettingUpdateRequest struct {
+	Value any `json:"value"`
+}
