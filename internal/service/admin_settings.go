@@ -152,6 +152,16 @@ func (sb *schemaBuilder) getFieldSchema(field reflect.StructField, v reflect.Val
 				schema.Properties.Set(fieldName, fieldSchema)
 			}
 		}
+	case reflect.Interface:
+		if v.IsNil() {
+			// For nil interfaces, we can't determine the type
+			schema.Type = "null"
+			schema.Properties = orderedmap.New[string, *jsonschema.Schema]()
+		} else {
+			// For non-nil interfaces, we need to get the actual value it contains
+			return sb.getFieldSchema(field, v.Elem())
+		}
+
 	case reflect.Ptr:
 		if !v.IsNil() {
 			return sb.getFieldSchema(field, v.Elem())
