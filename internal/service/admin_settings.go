@@ -92,25 +92,22 @@ func (sb *schemaBuilder) setSchemaProperty(path string, schema *jsonschema.Schem
 	parts := strings.Split(path, ".")
 	current := sb.schema
 
-	// For nested properties, we'll only create one level of nesting
-	if len(parts) > 1 {
-		// Get or create the top-level object
-		topLevelProp, exists := current.Properties.Get(parts[0])
-		if !exists {
-			topLevelProp = &jsonschema.Schema{
-				Type:       "object",
-				Properties: orderedmap.New[string, *jsonschema.Schema](),
+	for i, part := range parts {
+		if i == len(parts)-1 {
+			// This is the last part, set the schema
+			current.Properties.Set(part, schema)
+		} else {
+			// This is an intermediate part, ensure the nested structure exists
+			next, exists := current.Properties.Get(part)
+			if !exists {
+				next = &jsonschema.Schema{
+					Type:       "object",
+					Properties: orderedmap.New[string, *jsonschema.Schema](),
+				}
+				current.Properties.Set(part, next)
 			}
-			current.Properties.Set(parts[0], topLevelProp)
+			current = next
 		}
-		current = topLevelProp
-
-		// Join the rest of the path
-		propertyName := strings.Join(parts[1:], ".")
-		current.Properties.Set(propertyName, schema)
-	} else {
-		// For top-level properties, just set them directly
-		current.Properties.Set(parts[0], schema)
 	}
 }
 
