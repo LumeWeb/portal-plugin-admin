@@ -93,6 +93,9 @@ func (sb *schemaBuilder) setSchemaProperty(path string, schema *jsonschema.Schem
 	current := sb.schema
 
 	for i, part := range parts {
+		if current.Properties == nil {
+			current.Properties = orderedmap.New[string, *jsonschema.Schema]()
+		}
 		if i == len(parts)-1 {
 			// This is the last part, set the schema
 			current.Properties.Set(part, schema)
@@ -156,7 +159,6 @@ func (sb *schemaBuilder) getFieldSchema(field reflect.StructField, v reflect.Val
 		if v.IsNil() {
 			// For nil interfaces, we can't determine the type
 			schema.Type = "null"
-			schema.Properties = orderedmap.New[string, *jsonschema.Schema]()
 		} else {
 			// For non-nil interfaces, we need to get the actual value it contains
 			return sb.getFieldSchema(field, v.Elem())
