@@ -93,7 +93,7 @@ func (sb *schemaBuilder) buildSchema(_ *reflect.StructField, field reflect.Struc
 	fieldName := getFieldName(field)
 	fullPath := buildFullPath(prefix, fieldName)
 
-	if fullPath == "" {
+	if fullPath == "" || fullPath == "config" {
 		return nil
 	}
 
