@@ -77,12 +77,7 @@ func (a *AdminSettingsService) GetSetting(key string) *messages.SettingsItem {
 }
 
 func (a *AdminSettingsService) UpdateSetting(setting *messages.SettingsItem) error {
-	err := a.ctx.Config().Update(setting.Key, setting.Value)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return a.ctx.Config().Update(setting.Key, setting.Value)
 }
 
 type schemaBuilder struct {
@@ -93,7 +88,7 @@ func (sb *schemaBuilder) buildSchema(_ *reflect.StructField, field reflect.Struc
 	fieldName := getFieldName(field)
 	fullPath := buildFullPath(prefix, fieldName)
 
-	if fullPath == "" || fullPath == "config" {
+	if fullPath == "" {
 		return nil
 	}
 
@@ -105,18 +100,73 @@ func (sb *schemaBuilder) buildSchema(_ *reflect.StructField, field reflect.Struc
 	return nil
 }
 
-func getFieldName(field reflect.StructField) string {
-	if configTag := field.Tag.Get("config"); configTag != "" {
-		return configTag
+func (sb *schemaBuilder) getFieldSchema(field reflect.StructField, v reflect.Value) *jsonschema.Schema {
+	schema := &jsonschema.Schema{}
+
+	switch v.Kind() {
+	case reflect.Bool:
+		schema.Type = "boolean"
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		schema.Type = "integer"
+	case reflect.Float32, reflect.Float64:
+		schema.Type = "number"
+	case reflect.String:
+		schema.Type = "string"
+	case reflect.Slice, reflect.Array:
+		schema.Type = "array"
+		if v.Len() > 0 {
+			schema.Items = sb.getFieldSchema(createStructField(v.Index(0).Type()), v.Index(0))
+		}
+	case reflect.Map:
+		schema.Type = "object"
+		schema.AdditionalProperties = &jsonschema.Schema{}
+		if v.Len() > 0 {
+			for _, key := range v.MapKeys() {
+				schema.AdditionalProperties = sb.getFieldSchema(reflect.StructField{}, v.MapIndex(key))
+				break
+			}
+		}
+	case reflect.Struct:
+		// Check if the struct implements MarshalYAML
+		if marshaler, ok := v.Interface().(yaml.Marshaler); ok {
+			yamlData, err := marshaler.MarshalYAML()
+			if err == nil {
+				return sb.handleYAMLMarshaled(yamlData)
+			}
+		}
+
+		return nil
+	case reflect.Ptr:
+		if !v.IsNil() {
+			return sb.getFieldSchema(field, v.Elem())
+		}
 	}
-	return strcase.SnakeCase(field.Name)
+
+	return schema
 }
 
-func buildFullPath(prefix, fieldName string) string {
-	if prefix == "" {
-		return fieldName
+func (sb *schemaBuilder) handleYAMLMarshaled(data interface{}) *jsonschema.Schema {
+	schema := &jsonschema.Schema{}
+
+	switch v := data.(type) {
+	case map[string]interface{}:
+		schema.Type = "object"
+		schema.Properties = orderedmap.New[string, *jsonschema.Schema]()
+		for key, val := range v {
+			schema.Properties.Set(key, sb.getFieldSchema(createStructField(reflect.TypeOf(val)), reflect.ValueOf(val)))
+		}
+	case []interface{}:
+		schema.Type = "array"
+		if len(v) > 0 {
+			schema.Items = sb.getFieldSchema(createStructField(reflect.TypeOf(v[0])), reflect.ValueOf(v[0]))
+		}
+	default:
+		// If it's not a map or slice, treat it as a simple value
+		return sb.getFieldSchema(createStructField(reflect.TypeOf(v)), reflect.ValueOf(v))
 	}
-	return prefix
+
+	return schema
 }
 
 func (sb *schemaBuilder) setSchemaProperty(path string, schema *jsonschema.Schema) {
@@ -145,75 +195,47 @@ func (sb *schemaBuilder) setSchemaProperty(path string, schema *jsonschema.Schem
 	}
 }
 
-func (sb *schemaBuilder) getFieldSchema(field reflect.StructField, v reflect.Value) *jsonschema.Schema {
-	schema := &jsonschema.Schema{}
-
-	switch v.Kind() {
-	case reflect.Bool:
-		schema.Type = "boolean"
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		schema.Type = "integer"
-	case reflect.Float32, reflect.Float64:
-		schema.Type = "number"
-	case reflect.String:
-		schema.Type = "string"
-	case reflect.Slice, reflect.Array:
-		schema.Type = "array"
-		if v.Len() > 0 {
-			schema.Items = sb.getFieldSchema(reflect.StructField{}, v.Index(0))
-		}
-	case reflect.Map:
-		schema.Type = "object"
-
-	case reflect.Struct:
-		// Check if the struct implements MarshalYAML
-		if marshaler, ok := v.Interface().(yaml.Marshaler); ok {
-			yamlData, err := marshaler.MarshalYAML()
-			if err == nil {
-				return sb.handleYAMLMarshaled(yamlData)
-			}
-		}
-
-		schema.Type = "object"
-		schema.Properties = orderedmap.New[string, *jsonschema.Schema]()
-		for i := 0; i < v.NumField(); i++ {
-			field := v.Type().Field(i)
-			fieldValue := v.Field(i)
-			fieldName := getFieldName(field)
-			fieldSchema := sb.getFieldSchema(field, fieldValue)
-			if fieldSchema != nil {
-				schema.Properties.Set(fieldName, fieldSchema)
-			}
-		}
-	case reflect.Interface, reflect.Ptr:
-		if !v.IsNil() {
-			return sb.getFieldSchema(field, v.Elem())
-		}
+func getFieldName(field reflect.StructField) string {
+	if configTag := field.Tag.Get("config"); configTag != "" {
+		return configTag
 	}
-
-	return schema
+	return strcase.SnakeCase(field.Name)
 }
 
-func (sb *schemaBuilder) handleYAMLMarshaled(data interface{}) *jsonschema.Schema {
-	schema := &jsonschema.Schema{}
+func buildFullPath(prefix, fieldName string) string {
+	if prefix == "" {
+		return fieldName
+	}
+	return strings.Join([]string{prefix, fieldName}, ".")
+}
+func createStructField(t reflect.Type) reflect.StructField {
+	// Create a new StructField
+	f := reflect.StructField{}
 
-	switch v := data.(type) {
-	case map[string]interface{}:
-		schema.Type = "object"
-		schema.Properties = orderedmap.New[string, *jsonschema.Schema]()
-		for key, val := range v {
-			schema.Properties.Set(key, sb.getFieldSchema(reflect.StructField{}, reflect.ValueOf(val)))
-		}
-	case []interface{}:
-		schema.Type = "array"
-		if len(v) > 0 {
-			schema.Items = sb.getFieldSchema(reflect.StructField{}, reflect.ValueOf(v[0]))
-		}
-	default:
-		// If it's not a map or slice, treat it as a simple value
-		return sb.getFieldSchema(reflect.StructField{}, reflect.ValueOf(v))
+	// Set the Type
+	f.Type = t
+
+	// Set the Name (assuming the struct type name is the field name)
+	f.Name = t.Name()
+
+	// Anonymous is false as this is the root
+	f.Anonymous = false
+
+	// PkgPath is empty for exported fields
+	if t.Name() != "" && t.Name()[0] >= 'A' && t.Name()[0] <= 'Z' {
+		f.PkgPath = ""
+	} else {
+		f.PkgPath = t.PkgPath()
 	}
 
-	return schema
+	// Tag is empty as we don't have tag information at this level
+	f.Tag = ""
+
+	// Offset is 0 as this is the root
+	f.Offset = 0
+
+	// Index is empty as this is the root
+	f.Index = []int{}
+
+	return f
 }
