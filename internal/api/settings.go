@@ -6,6 +6,8 @@ import (
 	"go.lumeweb.com/httputil"
 	"go.lumeweb.com/portal-plugin-admin/internal/api/messages"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 func (a *API) handleGetSchema(w http.ResponseWriter, r *http.Request) {
@@ -17,9 +19,28 @@ func (a *API) handleGetSchema(w http.ResponseWriter, r *http.Request) {
 
 func (a *API) handleListSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := httputil.Context(r, w)
-	settings := a.settings.GetSettings()
 
-	ctx.Encode(settings)
+	// Parse query parameters
+	query := r.URL.Query()
+	start, _ := strconv.Atoi(query.Get("_start"))
+	end, _ := strconv.Atoi(query.Get("_end"))
+	keyLike := query.Get("key_like")
+	valueLike := query.Get("value_like")
+
+	// Get all settings
+	allSettings := a.settings.GetSettings()
+
+	// Filter settings
+	filteredSettings := filterSettings(allSettings, keyLike, valueLike)
+
+	// Apply pagination
+	totalCount := len(filteredSettings)
+	paginatedSettings := paginateSettings(filteredSettings, start, end)
+
+	// Set Content-Range header
+	w.Header().Set("Content-Range", fmt.Sprintf("settings %d-%d/%d", start, end, totalCount))
+
+	ctx.Encode(paginatedSettings)
 }
 
 func (a *API) handleGetSetting(w http.ResponseWriter, r *http.Request) {
@@ -92,4 +113,32 @@ func verifySettingDataType(setting *messages.SettingsItem, newValue interface{})
 		return fmt.Errorf("unsupported setting type")
 	}
 	return nil
+}
+
+func filterSettings(settings []*messages.SettingsItem, keyLike, valueLike string) []*messages.SettingsItem {
+	if keyLike == "" && valueLike == "" {
+		return settings
+	}
+
+	var filtered []*messages.SettingsItem
+	for _, setting := range settings {
+		if (keyLike == "" || strings.Contains(strings.ToLower(setting.Key), strings.ToLower(keyLike))) &&
+			(valueLike == "" || strings.Contains(fmt.Sprintf("%v", setting.Value), valueLike)) {
+			filtered = append(filtered, setting)
+		}
+	}
+	return filtered
+}
+
+func paginateSettings(settings []*messages.SettingsItem, start, end int) []*messages.SettingsItem {
+	if start < 0 {
+		start = 0
+	}
+	if end > len(settings) || end == 0 {
+		end = len(settings)
+	}
+	if start > end {
+		return []*messages.SettingsItem{}
+	}
+	return settings[start:end]
 }
