@@ -92,7 +92,7 @@ func (sb *schemaBuilder) buildSchema(_ *reflect.StructField, field reflect.Struc
 		return nil
 	}
 
-	fieldSchema := sb.getFieldSchema(field, value)
+	fieldSchema := sb.getFieldSchema(field.Type, value)
 	if fieldSchema != nil {
 		sb.setSchemaProperty(fullPath, fieldSchema)
 	}
@@ -100,7 +100,7 @@ func (sb *schemaBuilder) buildSchema(_ *reflect.StructField, field reflect.Struc
 	return nil
 }
 
-func (sb *schemaBuilder) getFieldSchema(field reflect.StructField, v reflect.Value) *jsonschema.Schema {
+func (sb *schemaBuilder) getFieldSchema(field reflect.Type, v reflect.Value) *jsonschema.Schema {
 	schema := &jsonschema.Schema{}
 
 	switch v.Kind() {
@@ -116,14 +116,14 @@ func (sb *schemaBuilder) getFieldSchema(field reflect.StructField, v reflect.Val
 	case reflect.Slice, reflect.Array:
 		schema.Type = "array"
 		if v.Len() > 0 {
-			schema.Items = sb.getFieldSchema(createStructField(v.Index(0).Type()), v.Index(0))
+			schema.Items = sb.getFieldSchema(v.Index(0).Type(), v.Index(0))
 		}
 	case reflect.Map:
 		schema.Type = "object"
 		schema.AdditionalProperties = &jsonschema.Schema{}
 		if v.Len() > 0 {
 			for _, key := range v.MapKeys() {
-				schema.AdditionalProperties = sb.getFieldSchema(reflect.StructField{}, v.MapIndex(key))
+				schema.AdditionalProperties = sb.getFieldSchema(v.MapIndex(key).Type(), v.MapIndex(key))
 				break
 			}
 		}
@@ -154,16 +154,16 @@ func (sb *schemaBuilder) handleYAMLMarshaled(data interface{}) *jsonschema.Schem
 		schema.Type = "object"
 		schema.Properties = orderedmap.New[string, *jsonschema.Schema]()
 		for key, val := range v {
-			schema.Properties.Set(key, sb.getFieldSchema(createStructField(reflect.TypeOf(val)), reflect.ValueOf(val)))
+			schema.Properties.Set(key, sb.getFieldSchema(reflect.TypeOf(val), reflect.ValueOf(val)))
 		}
 	case []interface{}:
 		schema.Type = "array"
 		if len(v) > 0 {
-			schema.Items = sb.getFieldSchema(createStructField(reflect.TypeOf(v[0])), reflect.ValueOf(v[0]))
+			schema.Items = sb.getFieldSchema(reflect.TypeOf(v[0]), reflect.ValueOf(v[0]))
 		}
 	default:
 		// If it's not a map or slice, treat it as a simple value
-		return sb.getFieldSchema(createStructField(reflect.TypeOf(v)), reflect.ValueOf(v))
+		return sb.getFieldSchema(reflect.TypeOf(v), reflect.ValueOf(v))
 	}
 
 	return schema
@@ -207,35 +207,4 @@ func buildFullPath(prefix, fieldName string) string {
 		return fieldName
 	}
 	return strings.Join([]string{prefix, fieldName}, ".")
-}
-func createStructField(t reflect.Type) reflect.StructField {
-	// Create a new StructField
-	f := reflect.StructField{}
-
-	// Set the Type
-	f.Type = t
-
-	// Set the Name (assuming the struct type name is the field name)
-	f.Name = t.Name()
-
-	// Anonymous is false as this is the root
-	f.Anonymous = false
-
-	// PkgPath is empty for exported fields
-	if t.Name() != "" && t.Name()[0] >= 'A' && t.Name()[0] <= 'Z' {
-		f.PkgPath = ""
-	} else {
-		f.PkgPath = t.PkgPath()
-	}
-
-	// Tag is empty as we don't have tag information at this level
-	f.Tag = ""
-
-	// Offset is 0 as this is the root
-	f.Offset = 0
-
-	// Index is empty as this is the root
-	f.Index = []int{}
-
-	return f
 }
