@@ -39,7 +39,7 @@ func (a *API) handleListSettings(w http.ResponseWriter, r *http.Request) {
 	paginatedSettings := paginateSettings(filteredSettings, start, end)
 
 	// Set Content-Range header
-	w.Header().Set("Content-Range", fmt.Sprintf("settings %d-%d/%d", start, end, totalCount))
+	w.Header().Set("X-Total-Count", strconv.Itoa(totalCount))
 
 	ctx.Encode(paginatedSettings)
 }
