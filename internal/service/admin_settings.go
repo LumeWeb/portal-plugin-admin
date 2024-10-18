@@ -11,6 +11,7 @@ import (
 	"go.lumeweb.com/portal/core"
 	"gopkg.in/yaml.v3"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -60,15 +61,20 @@ func (a *AdminSettingsService) GetSchema() *schema.Schema {
 }
 
 func (a *AdminSettingsService) GetSettings() []*messages.SettingsItem {
-	return lo.MapToSlice(a.ctx.Config().All(), func(k string, v any) *messages.SettingsItem {
+	settings := lo.MapToSlice(a.ctx.Config().All(), func(k string, v any) *messages.SettingsItem {
 		return &messages.SettingsItem{
 			Key:      k,
 			Value:    v,
 			Editable: a.ctx.Config().IsEditable(k),
 		}
 	})
-}
 
+	sort.Slice(settings, func(i, j int) bool {
+		return settings[i].Key < settings[j].Key
+	})
+
+	return settings
+}
 func (a *AdminSettingsService) GetSetting(key string) *messages.SettingsItem {
 	exists := a.ctx.Config().Exists(key)
 	if !exists {
