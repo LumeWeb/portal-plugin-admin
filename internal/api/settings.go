@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func (a *API) handleGetSchema(w http.ResponseWriter, r *http.Request) {
@@ -78,8 +79,10 @@ func (a *API) handleUpdateSetting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	setting, err := normalizeSetting(setting, data.Value)
+
 	// Verify the data type before updating
-	if err := verifySettingDataType(setting, data.Value); err != nil {
+	if err != nil {
 		_ = ctx.Error(err, http.StatusBadRequest)
 		return
 	}
@@ -96,28 +99,51 @@ func (a *API) handleUpdateSetting(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func verifySettingDataType(setting *messages.SettingsItem, newValue interface{}) error {
+func normalizeSetting(setting *messages.SettingsItem, newValue interface{}) (*messages.SettingsItem, error) {
 	switch setting.Value.(type) {
 	case string:
 		if _, ok := newValue.(string); !ok {
-			return fmt.Errorf("invalid data type: expected string")
+			return nil, fmt.Errorf("invalid data type: expected string")
 		}
 	case int:
 		if _, ok := newValue.(int); !ok {
-			return fmt.Errorf("invalid data type: expected int")
+			return nil, fmt.Errorf("invalid data type: expected int")
 		}
 	case float64:
 		if _, ok := newValue.(float64); !ok {
-			return fmt.Errorf("invalid data type: expected float64")
+			return nil, fmt.Errorf("invalid data type: expected float64")
 		}
 	case bool:
 		if _, ok := newValue.(bool); !ok {
-			return fmt.Errorf("invalid data type: expected bool")
+			return nil, fmt.Errorf("invalid data type: expected bool")
+		}
+	case time.Duration:
+		switch v := newValue.(type) {
+		case time.Duration:
+			// Already a time.Duration, no conversion needed
+		case string:
+			// Parse the string as a duration
+			parsedDuration, err := time.ParseDuration(v)
+			if err != nil {
+				return nil, fmt.Errorf("invalid duration format: %v", err)
+			}
+			setting.Value = parsedDuration
+		case float64:
+			// Assume the float64 represents seconds
+			setting.Value = time.Duration(v * float64(time.Second))
+		default:
+			return nil, fmt.Errorf("invalid data type for duration: expected string, float64, or time.Duration")
 		}
 	default:
-		return fmt.Errorf("unsupported setting type")
+		return nil, fmt.Errorf("unsupported setting type")
 	}
-	return nil
+
+	// If we haven't returned an error by this point, update the value
+	if setting.Value != newValue {
+		setting.Value = newValue
+	}
+
+	return setting, nil
 }
 
 func filterSettings(settings []*messages.SettingsItem, keyLike, valueLike string) []*messages.SettingsItem {
