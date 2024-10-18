@@ -127,7 +127,7 @@ func (sb *schemaBuilder) getFieldSchema(field reflect.Type, v reflect.Value) *js
 				break
 			}
 		}
-	case reflect.Struct:
+	case reflect.Struct, reflect.Interface:
 		// Check if the struct implements MarshalYAML
 		if marshaler, ok := v.Interface().(yaml.Marshaler); ok {
 			yamlData, err := marshaler.MarshalYAML()
