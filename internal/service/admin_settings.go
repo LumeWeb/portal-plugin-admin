@@ -1,10 +1,12 @@
 package service
 
 import (
+	"fmt"
 	"github.com/samber/lo"
 	"github.com/stoewer/go-strcase"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"go.lumeweb.com/portal-plugin-admin/internal/api/messages"
+	"go.lumeweb.com/portal-plugin-admin/internal/internal"
 	"go.lumeweb.com/portal-plugin-admin/internal/schema"
 	"go.lumeweb.com/portal/core"
 	"gopkg.in/yaml.v3"
@@ -79,7 +81,57 @@ func (a *AdminSettingsService) GetSetting(key string) *messages.SettingsItem {
 }
 
 func (a *AdminSettingsService) UpdateSetting(setting *messages.SettingsItem) error {
-	return a.ctx.Config().Update(setting.Key, setting.Value)
+	parts := strings.Split(setting.Key, ".")
+	if len(parts) > 1 && isArrayIndex(parts[len(parts)-1]) {
+		// This is an array element update
+		return a.updateArraySetting(parts, setting.Value)
+	}
+
+	// This is a regular setting update
+	currentValue := a.ctx.Config().Get(setting.Key)
+	normalizedValue, err := internal.NormalizeSetting(currentValue, setting.Value)
+	if err != nil {
+		return err
+	}
+	return a.ctx.Config().Update(setting.Key, normalizedValue)
+}
+
+func (a *AdminSettingsService) updateArraySetting(parts []string, newValue interface{}) error {
+	arrayKey := strings.Join(parts[:len(parts)-1], ".")
+	index, err := strconv.Atoi(parts[len(parts)-1])
+	if err != nil {
+		return fmt.Errorf("invalid array index: %v", err)
+	}
+
+	currentArray := a.ctx.Config().Get(arrayKey)
+	arrayValue := reflect.ValueOf(currentArray)
+
+	if arrayValue.Kind() != reflect.Slice {
+		return fmt.Errorf("setting is not an array: %s", arrayKey)
+	}
+
+	if index < 0 || index >= arrayValue.Len() {
+		return fmt.Errorf("array index out of bounds: %d", index)
+	}
+
+	// Create a new slice and copy the current values
+	newArrayValue := reflect.MakeSlice(arrayValue.Type(), arrayValue.Len(), arrayValue.Cap())
+	reflect.Copy(newArrayValue, arrayValue)
+
+	// Update the specific element
+	normalizedValue, err := internal.NormalizeSetting(arrayValue.Index(index).Interface(), newValue)
+	if err != nil {
+		return err
+	}
+	newArrayValue.Index(index).Set(reflect.ValueOf(normalizedValue))
+
+	// Update the entire array setting
+	return a.ctx.Config().Update(arrayKey, newArrayValue.Interface())
+}
+
+func isArrayIndex(s string) bool {
+	_, err := strconv.Atoi(s)
+	return err == nil
 }
 
 type schemaBuilder struct {

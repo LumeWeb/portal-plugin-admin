@@ -5,10 +5,10 @@ import (
 	"github.com/gorilla/mux"
 	"go.lumeweb.com/httputil"
 	"go.lumeweb.com/portal-plugin-admin/internal/api/messages"
+	"go.lumeweb.com/portal-plugin-admin/internal/internal"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func (a *API) handleGetSchema(w http.ResponseWriter, r *http.Request) {
@@ -99,50 +99,12 @@ func (a *API) handleUpdateSetting(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func normalizeSetting(setting *messages.SettingsItem, newValue interface{}) (*messages.SettingsItem, error) {
-	switch setting.Value.(type) {
-	case string:
-		if _, ok := newValue.(string); !ok {
-			return nil, fmt.Errorf("invalid data type: expected string")
-		}
-	case int:
-		if _, ok := newValue.(int); !ok {
-			return nil, fmt.Errorf("invalid data type: expected int")
-		}
-	case float64:
-		if _, ok := newValue.(float64); !ok {
-			return nil, fmt.Errorf("invalid data type: expected float64")
-		}
-	case bool:
-		if _, ok := newValue.(bool); !ok {
-			return nil, fmt.Errorf("invalid data type: expected bool")
-		}
-	case time.Duration:
-		switch v := newValue.(type) {
-		case time.Duration:
-			// Already a time.Duration, no conversion needed
-		case string:
-			// Parse the string as a duration
-			parsedDuration, err := time.ParseDuration(v)
-			if err != nil {
-				return nil, fmt.Errorf("invalid duration format: %v", err)
-			}
-			setting.Value = parsedDuration
-		case float64:
-			// Assume the float64 represents seconds
-			setting.Value = time.Duration(v * float64(time.Second))
-		default:
-			return nil, fmt.Errorf("invalid data type for duration: expected string, float64, or time.Duration")
-		}
-	default:
-		return nil, fmt.Errorf("unsupported setting type")
+func normalizeSetting(setting *messages.SettingsItem, newValue any) (*messages.SettingsItem, error) {
+	normalized, err := internal.NormalizeSetting(setting.Value, newValue)
+	if err != nil {
+		return nil, err
 	}
-
-	// If we haven't returned an error by this point, update the value
-	if setting.Value != newValue {
-		setting.Value = newValue
-	}
-
+	setting.Value = normalized
 	return setting, nil
 }
 
