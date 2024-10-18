@@ -9,6 +9,7 @@ import (
 	"go.lumeweb.com/portal/core"
 	"gopkg.in/yaml.v3"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -38,7 +39,7 @@ func NewAdminSettingsService() (core.Service, []core.ContextBuilderOption, error
 				Properties: orderedmap.New[string, *schema.Schema](),
 			}
 
-			builder := &schemaBuilder{schema: _schema}
+			builder := &schemaBuilder{schema: _schema, ctx: ctx}
 			err := ctx.Config().FieldProcessor(ctx.Config().Config(), "", builder.buildSchema)
 			if err != nil {
 				return err
@@ -83,6 +84,7 @@ func (a *AdminSettingsService) UpdateSetting(setting *messages.SettingsItem) err
 
 type schemaBuilder struct {
 	schema *schema.Schema
+	ctx    core.Context
 }
 
 func (sb *schemaBuilder) buildSchema(_ *reflect.StructField, field reflect.StructField, value reflect.Value, prefix string) error {
@@ -93,7 +95,7 @@ func (sb *schemaBuilder) buildSchema(_ *reflect.StructField, field reflect.Struc
 		return nil
 	}
 
-	fieldSchema := sb.getFieldSchema(field.Type, value)
+	fieldSchema := sb.getFieldSchema(field.Type, value, fullPath)
 	if fieldSchema != nil {
 		sb.setSchemaProperty(fullPath, fieldSchema)
 	}
@@ -101,30 +103,39 @@ func (sb *schemaBuilder) buildSchema(_ *reflect.StructField, field reflect.Struc
 	return nil
 }
 
-func (sb *schemaBuilder) getFieldSchema(field reflect.Type, v reflect.Value) *schema.Schema {
+func (sb *schemaBuilder) getFieldSchema(field reflect.Type, v reflect.Value, path string) *schema.Schema {
 	_schema := &schema.Schema{}
+
+	checkReadyOnly := false
 
 	switch v.Kind() {
 	case reflect.Bool:
 		_schema.Type = "boolean"
+		checkReadyOnly = true
+
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		_schema.Type = "integer"
+		checkReadyOnly = true
 	case reflect.Float32, reflect.Float64:
 		_schema.Type = "number"
+		checkReadyOnly = true
 	case reflect.String:
 		_schema.Type = "string"
+		checkReadyOnly = true
 	case reflect.Slice, reflect.Array:
 		_schema.Type = "array"
 		if v.Len() > 0 {
-			_schema.Items = sb.getFieldSchema(v.Index(0).Type(), v.Index(0))
+			fullPath := buildFullPath(path, strconv.Itoa(0))
+			_schema.Items = sb.getFieldSchema(v.Index(0).Type(), v.Index(0), fullPath)
 		}
 	case reflect.Map:
 		_schema.Type = "object"
 		_schema.AdditionalProperties = &schema.Schema{}
 		if v.Len() > 0 {
 			for _, key := range v.MapKeys() {
-				_schema.AdditionalProperties = sb.getFieldSchema(v.MapIndex(key).Type(), v.MapIndex(key))
+				fullPath := buildFullPath(path, key.String())
+				_schema.AdditionalProperties = sb.getFieldSchema(v.MapIndex(key).Type(), v.MapIndex(key), fullPath)
 				break
 			}
 		}
@@ -140,7 +151,13 @@ func (sb *schemaBuilder) getFieldSchema(field reflect.Type, v reflect.Value) *sc
 		return nil
 	case reflect.Ptr:
 		if !v.IsNil() {
-			return sb.getFieldSchema(field, v.Elem())
+			return sb.getFieldSchema(field, v.Elem(), path)
+		}
+	}
+
+	if checkReadyOnly {
+		if !sb.ctx.Config().IsEditable(path) {
+			_schema.ReadOnly = true
 		}
 	}
 
@@ -155,16 +172,16 @@ func (sb *schemaBuilder) handleYAMLMarshaled(data interface{}) *schema.Schema {
 		_schema.Type = "object"
 		_schema.Properties = orderedmap.New[string, *schema.Schema]()
 		for key, val := range v {
-			_schema.Properties.Set(key, sb.getFieldSchema(reflect.TypeOf(val), reflect.ValueOf(val)))
+			_schema.Properties.Set(key, sb.getFieldSchema(reflect.TypeOf(val), reflect.ValueOf(val), key))
 		}
 	case []interface{}:
 		_schema.Type = "array"
 		if len(v) > 0 {
-			_schema.Items = sb.getFieldSchema(reflect.TypeOf(v[0]), reflect.ValueOf(v[0]))
+			_schema.Items = sb.getFieldSchema(reflect.TypeOf(v[0]), reflect.ValueOf(v[0]), "")
 		}
 	default:
 		// If it's not a map or slice, treat it as a simple value
-		return sb.getFieldSchema(reflect.TypeOf(v), reflect.ValueOf(v))
+		return sb.getFieldSchema(reflect.TypeOf(v), reflect.ValueOf(v), "")
 	}
 
 	return _schema
