@@ -1,11 +1,11 @@
 package service
 
 import (
-	"github.com/invopop/jsonschema"
 	"github.com/samber/lo"
 	"github.com/stoewer/go-strcase"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"go.lumeweb.com/portal-plugin-admin/internal/api/messages"
+	"go.lumeweb.com/portal-plugin-admin/internal/schema"
 	"go.lumeweb.com/portal/core"
 	"gopkg.in/yaml.v3"
 	"reflect"
@@ -14,7 +14,7 @@ import (
 
 const ADMIN_SETTINGS_SERVICE = "admin_settings"
 
-var configSchema *jsonschema.Schema
+var configSchema *schema.Schema
 
 type AdminSettingsService struct {
 	ctx core.Context
@@ -31,20 +31,20 @@ func NewAdminSettingsService() (core.Service, []core.ContextBuilderOption, error
 		core.ContextWithStartupFunc(func(ctx core.Context) error {
 			adminSettingsService.ctx = ctx
 
-			schema := &jsonschema.Schema{
+			_schema := &schema.Schema{
 				Version:    "https://json-schema.org/draft/2020-12/schema",
 				ID:         "https://go.lumeweb.com/portal/config/config",
 				Type:       "object",
-				Properties: orderedmap.New[string, *jsonschema.Schema](),
+				Properties: orderedmap.New[string, *schema.Schema](),
 			}
 
-			builder := &schemaBuilder{schema: schema}
+			builder := &schemaBuilder{schema: _schema}
 			err := ctx.Config().FieldProcessor(ctx.Config().Config(), "", builder.buildSchema)
 			if err != nil {
 				return err
 			}
 
-			configSchema = schema
+			configSchema = _schema
 			return nil
 		}),
 	)
@@ -52,7 +52,7 @@ func NewAdminSettingsService() (core.Service, []core.ContextBuilderOption, error
 	return adminSettingsService, opts, nil
 }
 
-func (a *AdminSettingsService) GetSchema() *jsonschema.Schema {
+func (a *AdminSettingsService) GetSchema() *schema.Schema {
 	return configSchema
 }
 
@@ -81,7 +81,7 @@ func (a *AdminSettingsService) UpdateSetting(setting *messages.SettingsItem) err
 }
 
 type schemaBuilder struct {
-	schema *jsonschema.Schema
+	schema *schema.Schema
 }
 
 func (sb *schemaBuilder) buildSchema(_ *reflect.StructField, field reflect.StructField, value reflect.Value, prefix string) error {
@@ -100,30 +100,30 @@ func (sb *schemaBuilder) buildSchema(_ *reflect.StructField, field reflect.Struc
 	return nil
 }
 
-func (sb *schemaBuilder) getFieldSchema(field reflect.Type, v reflect.Value) *jsonschema.Schema {
-	schema := &jsonschema.Schema{}
+func (sb *schemaBuilder) getFieldSchema(field reflect.Type, v reflect.Value) *schema.Schema {
+	_schema := &schema.Schema{}
 
 	switch v.Kind() {
 	case reflect.Bool:
-		schema.Type = "boolean"
+		_schema.Type = "boolean"
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		schema.Type = "integer"
+		_schema.Type = "integer"
 	case reflect.Float32, reflect.Float64:
-		schema.Type = "number"
+		_schema.Type = "number"
 	case reflect.String:
-		schema.Type = "string"
+		_schema.Type = "string"
 	case reflect.Slice, reflect.Array:
-		schema.Type = "array"
+		_schema.Type = "array"
 		if v.Len() > 0 {
-			schema.Items = sb.getFieldSchema(v.Index(0).Type(), v.Index(0))
+			_schema.Items = sb.getFieldSchema(v.Index(0).Type(), v.Index(0))
 		}
 	case reflect.Map:
-		schema.Type = "object"
-		schema.AdditionalProperties = &jsonschema.Schema{}
+		_schema.Type = "object"
+		_schema.AdditionalProperties = &schema.Schema{}
 		if v.Len() > 0 {
 			for _, key := range v.MapKeys() {
-				schema.AdditionalProperties = sb.getFieldSchema(v.MapIndex(key).Type(), v.MapIndex(key))
+				_schema.AdditionalProperties = sb.getFieldSchema(v.MapIndex(key).Type(), v.MapIndex(key))
 				break
 			}
 		}
@@ -143,50 +143,50 @@ func (sb *schemaBuilder) getFieldSchema(field reflect.Type, v reflect.Value) *js
 		}
 	}
 
-	return schema
+	return _schema
 }
 
-func (sb *schemaBuilder) handleYAMLMarshaled(data interface{}) *jsonschema.Schema {
-	schema := &jsonschema.Schema{}
+func (sb *schemaBuilder) handleYAMLMarshaled(data interface{}) *schema.Schema {
+	_schema := &schema.Schema{}
 
 	switch v := data.(type) {
 	case map[string]interface{}:
-		schema.Type = "object"
-		schema.Properties = orderedmap.New[string, *jsonschema.Schema]()
+		_schema.Type = "object"
+		_schema.Properties = orderedmap.New[string, *schema.Schema]()
 		for key, val := range v {
-			schema.Properties.Set(key, sb.getFieldSchema(reflect.TypeOf(val), reflect.ValueOf(val)))
+			_schema.Properties.Set(key, sb.getFieldSchema(reflect.TypeOf(val), reflect.ValueOf(val)))
 		}
 	case []interface{}:
-		schema.Type = "array"
+		_schema.Type = "array"
 		if len(v) > 0 {
-			schema.Items = sb.getFieldSchema(reflect.TypeOf(v[0]), reflect.ValueOf(v[0]))
+			_schema.Items = sb.getFieldSchema(reflect.TypeOf(v[0]), reflect.ValueOf(v[0]))
 		}
 	default:
 		// If it's not a map or slice, treat it as a simple value
 		return sb.getFieldSchema(reflect.TypeOf(v), reflect.ValueOf(v))
 	}
 
-	return schema
+	return _schema
 }
 
-func (sb *schemaBuilder) setSchemaProperty(path string, schema *jsonschema.Schema) {
+func (sb *schemaBuilder) setSchemaProperty(path string, _schema *schema.Schema) {
 	parts := strings.Split(path, ".")
 	current := sb.schema
 
 	for i, part := range parts {
 		if current.Properties == nil {
-			current.Properties = orderedmap.New[string, *jsonschema.Schema]()
+			current.Properties = orderedmap.New[string, *schema.Schema]()
 		}
 		if i == len(parts)-1 {
 			// This is the last part, set the schema
-			current.Properties.Set(part, schema)
+			current.Properties.Set(part, _schema)
 		} else {
 			// This is an intermediate part, ensure the nested structure exists
 			next, exists := current.Properties.Get(part)
 			if !exists {
-				next = &jsonschema.Schema{
+				next = &schema.Schema{
 					Type:       "object",
-					Properties: orderedmap.New[string, *jsonschema.Schema](),
+					Properties: orderedmap.New[string, *schema.Schema](),
 				}
 				current.Properties.Set(part, next)
 			}

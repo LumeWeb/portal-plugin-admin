@@ -11,7 +11,7 @@ require (
 	github.com/stoewer/go-strcase v1.3.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.lumeweb.com/httputil v0.0.0-20240907105629-dbffb601f2ab
-	go.lumeweb.com/portal v0.1.2-0.20241016073622-a54837c0f85f
+	go.lumeweb.com/portal v0.1.2-0.20241018005032-7c6cf8a91b1a
 	gorm.io/gorm v1.25.12
 )
 
