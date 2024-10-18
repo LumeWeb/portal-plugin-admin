@@ -3,6 +3,7 @@ package api
 import (
 	_ "embed"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"go.lumeweb.com/portal-plugin-admin/internal"
 	"go.lumeweb.com/portal-plugin-admin/internal/service"
 	"go.lumeweb.com/portal/config"
@@ -38,7 +39,11 @@ func (a API) Configure(router *mux.Router) error {
 		return err
 	}
 
-	router.Use(middleware.CorsMiddleware(nil))
+	corsHandler := middleware.CorsMiddleware(&cors.Options{
+		ExposedHeaders: []string{"X-Total-Count"},
+	})
+
+	router.Use(corsHandler)
 
 	router.HandleFunc("/api/cron/jobs", a.handleListCronJobs).Methods("GET")
 	router.HandleFunc("/api/cron/jobs/{uuid}", a.handleGetCronJob).Methods("GET")
