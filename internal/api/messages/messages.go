@@ -40,8 +40,9 @@ type PaginationData struct {
 }
 
 type SettingsItem struct {
-	Key   string `json:"key"`
-	Value any    `json:"value"`
+	Key      string `json:"key"`
+	Value    any    `json:"value"`
+	Editable bool   `json:"editable"`
 }
 
 type SettingUpdateRequest struct {

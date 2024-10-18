@@ -59,8 +59,9 @@ func (a *AdminSettingsService) GetSchema() *schema.Schema {
 func (a *AdminSettingsService) GetSettings() []*messages.SettingsItem {
 	return lo.MapToSlice(a.ctx.Config().All(), func(k string, v any) *messages.SettingsItem {
 		return &messages.SettingsItem{
-			Key:   k,
-			Value: v,
+			Key:      k,
+			Value:    v,
+			Editable: a.ctx.Config().IsEditable(k),
 		}
 	})
 }

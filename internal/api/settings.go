@@ -73,6 +73,11 @@ func (a *API) handleUpdateSetting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !setting.Editable {
+		_ = ctx.Error(fmt.Errorf("Setting is not editable"), http.StatusForbidden)
+		return
+	}
+
 	// Verify the data type before updating
 	if err := verifySettingDataType(setting, data.Value); err != nil {
 		_ = ctx.Error(err, http.StatusBadRequest)
