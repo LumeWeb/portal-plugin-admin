@@ -10,6 +10,7 @@ import (
 	"go.lumeweb.com/portal/core"
 	"go.lumeweb.com/portal/middleware"
 	"go.lumeweb.com/portal/middleware/swagger"
+	"net/http"
 )
 
 //go:embed swagger.yaml
@@ -31,29 +32,49 @@ func (a API) Subdomain() string {
 	return internal.PluginName
 }
 
-func (a API) Configure(router *mux.Router) error {
-
+func (a API) Configure(router *mux.Router, accessSvc core.AccessService) error {
 	// Swagger routes
-	err := swagger.Swagger(swagSpec, router)
-	if err != nil {
+	if err := swagger.Swagger(swagSpec, router); err != nil {
 		return err
 	}
+
+	authMw := middleware.AuthMiddleware(middleware.AuthMiddlewareOptions{
+		Context: a.ctx,
+		Purpose: core.JWTPurposeLogin,
+	})
+
+	accessMw := middleware.AccessMiddleware(a.ctx)
 
 	corsHandler := middleware.CorsMiddleware(&cors.Options{
 		ExposedHeaders: []string{"X-Total-Count"},
 	})
 
-	router.Use(corsHandler)
+	router.Use(corsHandler, authMw, accessMw)
 
-	router.HandleFunc("/api/cron/jobs", a.handleListCronJobs).Methods("GET")
-	router.HandleFunc("/api/cron/jobs/{uuid}", a.handleGetCronJob).Methods("GET")
-	router.HandleFunc("/api/cron/jobs/{uuid}/logs", a.handleListCronJobLogs).Methods("GET")
-	router.HandleFunc("/api/cron/stats", a.handleGetCronStats).Methods("GET")
+	routes := []struct {
+		path    string
+		method  string
+		handler http.HandlerFunc
+	}{
+		{"/api/cron/jobs", "GET", a.handleListCronJobs},
+		{"/api/cron/jobs/{uuid}", "GET", a.handleGetCronJob},
+		{"/api/cron/jobs/{uuid}/logs", "GET", a.handleListCronJobLogs},
+		{"/api/cron/stats", "GET", a.handleGetCronStats},
+		{"/api/settings/schema", "GET", a.handleGetSchema},
+		{"/api/settings", "GET", a.handleListSettings},
+		{"/api/settings/{id}", "GET", a.handleGetSetting},
+		{"/api/settings/{id}", "POST", a.handleUpdateSetting},
+	}
 
-	router.HandleFunc("/api/settings/schema", a.handleGetSchema).Methods("GET")
-	router.HandleFunc("/api/settings", a.handleListSettings).Methods("GET")
-	router.HandleFunc("/api/settings/{id}", a.handleGetSetting).Methods("GET")
-	router.HandleFunc("/api/settings/{id}", a.handleUpdateSetting).Methods("POST")
+	subdomain := a.Subdomain()
+
+	for _, route := range routes {
+		router.HandleFunc(route.path, route.handler).Methods(route.method)
+		if err := accessSvc.RegisterRoute(subdomain, route.path, route.method, core.ACCESS_ADMIN_ROLE); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
