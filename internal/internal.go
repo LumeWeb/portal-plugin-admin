@@ -1,3 +1,3 @@
 package internal
 
-const PluginName = "admin"
+const PLUGIN_NAME = "admin"
