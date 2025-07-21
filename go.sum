@@ -503,10 +503,10 @@ go.lumeweb.com/portal-router v0.6.1 h1:Tuh8DC0gq+uUHH9ulPYjfD5Thf80YDu5g4ver/AVr
 go.lumeweb.com/portal-router v0.6.1/go.mod h1:B/OI8cnbT05TpBC8vh/QI+3zNqrIlFx0Hgtz+HnNXJ4=
 go.lumeweb.com/queryutil v0.3.12 h1:usfolr6PH+1qb45eApdxU6uFzlBuM9RBNSu+jWzLI+4=
 go.lumeweb.com/queryutil v0.3.12/go.mod h1:tcD4meQIXQYNjJ8i0dahCa8kpzQyks+d7PiC+qCXdNg=
-go.lumeweb.com/web/go/portal-admin v0.0.0-20250721074456-629f88fe5e51 h1:9eFZANpgPlPlSzsZAoziKFQEenUS4AOrxXgo5TxPVl8=
-go.lumeweb.com/web/go/portal-admin v0.0.0-20250721074456-629f88fe5e51/go.mod h1:ofRaTDW+AqRri1eQ7np87w1xnqGim+40ZGxP9xqW4jQ=
-go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20250721074456-629f88fe5e51 h1:gNvHHQBi4vV9KOCYrxnFpzWEdbkIg7PES2d/vNSDkbg=
-go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20250721074456-629f88fe5e51/go.mod h1:L7o7SuWI9e8BzCnbAbsK4wATYHajZB79svcPP46iZsY=
+go.lumeweb.com/web/go/portal-admin v0.0.0-20250721203000-f3f43e506eea h1:bmGrys+s8FO10k/BipbSS2PloBGPKsxDXGLZdsvOP3o=
+go.lumeweb.com/web/go/portal-admin v0.0.0-20250721203000-f3f43e506eea/go.mod h1:ofRaTDW+AqRri1eQ7np87w1xnqGim+40ZGxP9xqW4jQ=
+go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20250721203000-f3f43e506eea h1:ZvkV11MPR5qlpoorRiFV1dgI+3FjeUJ4u1+Yu9CogYM=
+go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20250721203000-f3f43e506eea/go.mod h1:L7o7SuWI9e8BzCnbAbsK4wATYHajZB79svcPP46iZsY=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/otel v1.35.0 h1:xKWKPxrxB6OtMCbmMY021CqC45J+3Onta9MqjhnusiQ=
