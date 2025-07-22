@@ -3,10 +3,10 @@ module go.lumeweb.com/portal-plugin-admin
 go 1.24.3
 
 require (
-	go.lumeweb.com/portal v0.4.2-0.20250722101051-5fa1cb4088aa
-	go.lumeweb.com/portal-router v0.6.2
-	go.lumeweb.com/web/go/portal-admin v0.0.0-20250721203000-f3f43e506eea
-	go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20250721203000-f3f43e506eea
+	go.lumeweb.com/portal v0.4.2-0.20250722104831-da6275bbc705
+	go.lumeweb.com/portal-router v0.6.3
+	go.lumeweb.com/web/go/portal-admin v0.0.0-20250722113806-c7a288904815
+	go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20250722113806-c7a288904815
 )
 
 require (
@@ -42,6 +42,7 @@ require (
 	github.com/getkin/kin-openapi v0.132.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-co-op/gocron/v2 v2.16.2 // indirect
+	github.com/go-gorm/caches/v4 v4.0.5 // indirect
 	github.com/go-openapi/jsonpointer v0.21.1 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
@@ -71,6 +72,7 @@ require (
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-sqlite3 v1.14.28 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -134,6 +136,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/datatypes v1.2.6 // indirect
 	gorm.io/driver/mysql v1.6.0 // indirect
+	gorm.io/driver/sqlite v1.6.0 // indirect
 	gorm.io/gorm v1.30.0 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
 	lukechampine.com/frand v1.5.1 // indirect
