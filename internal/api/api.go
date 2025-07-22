@@ -25,8 +25,7 @@ func (a API) Subdomain() string {
 }
 
 func (a API) Configure(r router.Router, _ core.AccessService) error {
-	router.MustDefaultStaticSetup(r, portal_admin.GetFS())
-
+	router.MustDefaultStaticSetup(r, router.NewAppFilesystem(portal_admin.GetFS(), a.ctx.Config().Config().Core.Domain))
 	return nil
 }
 

@@ -3,8 +3,8 @@ module go.lumeweb.com/portal-plugin-admin
 go 1.24.3
 
 require (
-	go.lumeweb.com/portal v0.4.2-0.20250716115516-315a9f33ba90
-	go.lumeweb.com/portal-router v0.6.1
+	go.lumeweb.com/portal v0.4.2-0.20250722101051-5fa1cb4088aa
+	go.lumeweb.com/portal-router v0.6.2
 	go.lumeweb.com/web/go/portal-admin v0.0.0-20250721203000-f3f43e506eea
 	go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20250721203000-f3f43e506eea
 )
@@ -107,7 +107,7 @@ require (
 	go.etcd.io/etcd/api/v3 v3.6.2 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.6.2 // indirect
 	go.etcd.io/etcd/client/v3 v3.6.2 // indirect
-	go.lumeweb.com/configmanager v0.3.16 // indirect
+	go.lumeweb.com/configmanager v0.3.19 // indirect
 	go.lumeweb.com/event/v2 v2.1.0 // indirect
 	go.lumeweb.com/gswagger v0.20.8 // indirect
 	go.lumeweb.com/portal-middleware v0.2.9 // indirect
