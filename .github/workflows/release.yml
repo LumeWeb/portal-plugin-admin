@@ -1,0 +1,13 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    uses: LumeWeb/workflows/.github/workflows/release.yml@develop
+    secrets:
+      PAT: ${{ secrets.PAT }}
