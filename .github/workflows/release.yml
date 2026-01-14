@@ -9,5 +9,4 @@ permissions:
 jobs:
   release:
     uses: LumeWeb/workflows/.github/workflows/release.yml@develop
-    secrets:
-      PAT: ${{ secrets.PAT }}
+    secrets: inherit
