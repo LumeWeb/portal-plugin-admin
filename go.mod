@@ -5,8 +5,8 @@ go 1.24.3
 require (
 	go.lumeweb.com/portal v0.4.2-0.20250722104831-da6275bbc705
 	go.lumeweb.com/portal-router v0.6.3
-	go.lumeweb.com/web/go/portal-admin v0.0.0-20260122134448-ff3e4e683ef9
-	go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20260122134448-ff3e4e683ef9
+	go.lumeweb.com/web/go/portal-admin v0.0.0-20260122162940-a2540d092f78
+	go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20260122162940-a2540d092f78
 )
 
 require (
