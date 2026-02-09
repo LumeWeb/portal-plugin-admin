@@ -2,9 +2,10 @@ package api
 
 import (
 	_ "embed"
+
 	"go.lumeweb.com/portal-plugin-admin/internal"
 	pluginConfig "go.lumeweb.com/portal-plugin-admin/internal/config"
-	"go.lumeweb.com/portal-router"
+	router "go.lumeweb.com/portal-router"
 	"go.lumeweb.com/portal/config"
 	"go.lumeweb.com/portal/core"
 	portal_admin "go.lumeweb.com/web/go/portal-admin"
@@ -13,11 +14,15 @@ import (
 var _ core.API = (*API)(nil)
 
 type API struct {
-	ctx core.Context
+	*core.BaseComponent
 }
 
 func (a API) Name() string {
 	return internal.PLUGIN_NAME
+}
+
+func (a API) ID() string {
+	return a.Name()
 }
 
 func (a API) Subdomain() string {
@@ -25,7 +30,7 @@ func (a API) Subdomain() string {
 }
 
 func (a API) Configure(r router.Router, _ core.AccessService) error {
-	router.MustDefaultStaticSetup(r, router.NewAppFilesystem(portal_admin.GetFS(), a.ctx.Config().Config().Core.Domain))
+	router.MustDefaultStaticSetup(r, router.NewAppFilesystem(portal_admin.GetFS(), a.Config().Config().Core.Domain))
 	return nil
 }
 
@@ -33,7 +38,7 @@ func (a API) AuthTokenName() string {
 	return core.AUTH_TOKEN_NAME
 }
 
-func (a API) Config() config.APIConfig {
+func (a API) GetConfig() config.APIConfig {
 	return &pluginConfig.APIConfig{}
 }
 
@@ -49,12 +54,5 @@ func (a API) OpenAPIInfo() router.APIInfoDefinition {
 func NewAPI() (core.API, []core.ContextBuilderOption, error) {
 	api := &API{}
 
-	opts := core.ContextOptions(
-		core.ContextWithStartupFunc(func(ctx core.Context) error {
-			api.ctx = ctx
-			return nil
-		}),
-	)
-
-	return api, opts, nil
+	return api, nil, nil
 }
