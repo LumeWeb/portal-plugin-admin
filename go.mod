@@ -3,7 +3,11 @@ module go.lumeweb.com/portal-plugin-admin // v0.1.0
 go 1.24.3
 
 require (
+	github.com/Oudwins/zog v0.22.0
+	github.com/labstack/echo/v4 v4.15.0
+	go.lumeweb.com/httputil v0.5.4
 	go.lumeweb.com/portal v0.4.2-0.20260204232917-ecd0f81a80f1
+	go.lumeweb.com/portal-middleware v0.3.4
 	go.lumeweb.com/portal-router v0.6.11
 	go.lumeweb.com/web/go/portal-admin v0.0.0-20260526172636-658cb25ff6e4
 	go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20260526172636-658cb25ff6e4
@@ -12,7 +16,6 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/AfterShip/email-verifier v1.4.1 // indirect
-	github.com/Oudwins/zog v0.22.0 // indirect
 	github.com/adjust/rmq/v5 v5.2.0 // indirect
 	github.com/alicebob/miniredis/v2 v2.35.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.41.0 // indirect
@@ -69,7 +72,6 @@ require (
 	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/knadh/koanf/providers/env/v2 v2.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.3.0 // indirect
-	github.com/labstack/echo/v4 v4.15.0 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/looplab/fsm v1.0.3 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
@@ -119,7 +121,6 @@ require (
 	go.lumeweb.com/configmanager v0.3.24 // indirect
 	go.lumeweb.com/event/v2 v2.1.0 // indirect
 	go.lumeweb.com/gswagger v0.20.10 // indirect
-	go.lumeweb.com/portal-middleware v0.3.4 // indirect
 	go.lumeweb.com/queryutil v0.3.15 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.14.0 // indirect
