@@ -4,11 +4,11 @@ go 1.26
 
 require (
 	github.com/Oudwins/zog v0.22.0
-	github.com/labstack/echo/v4 v4.15.0
+	github.com/labstack/echo/v4 v4.15.1
 	go.lumeweb.com/httputil v0.5.4
 	go.lumeweb.com/portal v0.4.2-0.20260204232917-ecd0f81a80f1
 	go.lumeweb.com/portal-middleware v0.3.4
-	go.lumeweb.com/portal-router v0.6.11
+	go.lumeweb.com/portal-router v0.7.0
 	go.lumeweb.com/web/go/portal-admin v0.0.0-20260609165001-7bdb11c87f22
 	go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20260609165001-7bdb11c87f22
 )
@@ -32,7 +32,7 @@ require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/boombuler/barcode v1.0.2 // indirect
-	github.com/buger/jsonparser v1.1.1 // indirect
+	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
@@ -44,7 +44,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gammazero/deque v1.1.0 // indirect
 	github.com/gammazero/workerpool v1.1.3 // indirect
-	github.com/getkin/kin-openapi v0.132.0 // indirect
+	github.com/getkin/kin-openapi v0.134.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-co-op/gocron/v2 v2.19.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -90,8 +90,8 @@ require (
 	github.com/multiformats/go-multihash v0.2.3 // indirect
 	github.com/multiformats/go-varint v0.1.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
-	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
+	github.com/oasdiff/yaml v0.0.0-20260313112342-a3ea61cb4d4c // indirect
+	github.com/oasdiff/yaml3 v0.0.0-20260224194419-61cd415a242b // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/pquerna/otp v1.5.0 // indirect
@@ -114,13 +114,14 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
+	github.com/woodsbury/decimal128 v1.3.0 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.etcd.io/etcd/api/v3 v3.6.7 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.6.7 // indirect
 	go.etcd.io/etcd/client/v3 v3.6.7 // indirect
 	go.lumeweb.com/configmanager v0.3.24 // indirect
 	go.lumeweb.com/event/v2 v2.1.0 // indirect
-	go.lumeweb.com/gswagger v0.20.10 // indirect
+	go.lumeweb.com/gswagger v0.20.12 // indirect
 	go.lumeweb.com/queryutil v0.3.15 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.14.0 // indirect
