@@ -42,7 +42,7 @@ func (a *API) Subdomain() string {
 }
 
 func (a *API) Configure(r router.Router, accessSvc core.AccessService) error {
-	router.MustDefaultStaticSetup(r, router.NewAppFilesystem(portal_admin.GetFS(), a.Config().Config().Core.Domain))
+	router.MustDefaultStaticSetup(r, router.NewAppFilesystem(portal_admin.GetFS(), router.AppFilesystemConfig{Domain: a.Config().Config().Core.Domain}))
 
 	authMw := middleware.AuthMiddleware(a.Context(), middleware.WithAuthPurpose(jwt.PurposeLogin))
 	accessMw := middleware.AccessMiddleware(a.Context())
