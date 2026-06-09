@@ -1,6 +1,6 @@
 module go.lumeweb.com/portal-plugin-admin // v0.1.0
 
-go 1.24.3
+go 1.26
 
 require (
 	github.com/Oudwins/zog v0.22.0
@@ -9,8 +9,8 @@ require (
 	go.lumeweb.com/portal v0.4.2-0.20260204232917-ecd0f81a80f1
 	go.lumeweb.com/portal-middleware v0.3.4
 	go.lumeweb.com/portal-router v0.6.11
-	go.lumeweb.com/web/go/portal-admin v0.0.0-20260606162242-33afbf9a3873
-	go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20260606162242-33afbf9a3873
+	go.lumeweb.com/web/go/portal-admin v0.0.0-20260609165001-7bdb11c87f22
+	go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20260609165001-7bdb11c87f22
 )
 
 require (
