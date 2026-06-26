@@ -5,6 +5,7 @@ go 1.26
 require (
 	github.com/Oudwins/zog v0.22.0
 	github.com/labstack/echo/v4 v4.15.1
+	github.com/samber/lo v1.52.0
 	github.com/stretchr/testify v1.11.1
 	go.lumeweb.com/httputil v0.5.4
 	go.lumeweb.com/portal v0.4.2-0.20260204232917-ecd0f81a80f1
@@ -146,7 +147,6 @@ require (
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/ryszard/goskiplist v0.0.0-20150312221310-2dfbae5fcf46 // indirect
-	github.com/samber/lo v1.52.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect

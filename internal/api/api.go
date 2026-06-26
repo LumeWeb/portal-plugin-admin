@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 	pprofhttp "net/http/pprof"
 
+	"github.com/samber/lo"
 	"go.lumeweb.com/httputil"
 	"go.lumeweb.com/portal-middleware/middleware"
 	"go.lumeweb.com/portal-middleware/auth/jwt"
@@ -45,20 +46,21 @@ func (a *API) Subdomain() string {
 func (a *API) Configure(r router.Router, accessSvc core.AccessService) error {
 	router.MustDefaultStaticSetup(r, router.NewAppFilesystem(portal_admin.GetFS(), router.AppFilesystemConfig{Domain: a.Config().Config().Core.Domain}))
 
-	apiCfg := core.GetAPIConfig[*pluginConfig.APIConfig](a.Context(), internal.PLUGIN_NAME)
-
-	var authMw echo.MiddlewareFunc
-	if apiCfg.PprofSecret != "" {
-		a.Logger().Info("pprof shared secret auth enabled")
-		authMw = pluginMw.PprofSharedSecretAuth(apiCfg)
-	} else {
-		authMw = middleware.AuthMiddleware(a.Context(), middleware.WithAuthPurpose(jwt.PurposeLogin))
-	}
+	authMw := middleware.AuthMiddleware(a.Context(), middleware.WithAuthPurpose(jwt.PurposeLogin))
 	accessMw := middleware.AccessMiddleware(a.Context())
 
-	routes := a.buildPprofRoutes(authMw, accessMw, apiCfg.PprofSecret != "")
+	routes := a.buildPprofRoutes(authMw, accessMw)
 	if err := router.RegisterRoutes(r, accessSvc, a.Subdomain(), routes); err != nil {
 		return fmt.Errorf("failed to register pprof routes: %w", err)
+	}
+
+	apiCfg := core.GetAPIConfig[*pluginConfig.APIConfig](a.Context(), internal.PLUGIN_NAME)
+	if apiCfg.PprofSecret != "" {
+		a.Logger().Info("internal pprof shared secret auth enabled")
+		internalRoutes := a.buildInternalPprofRoutes(pluginMw.PprofSharedSecretAuth(apiCfg))
+		if err := router.RegisterRoutes(r, accessSvc, a.Subdomain(), internalRoutes); err != nil {
+			return fmt.Errorf("failed to register internal pprof routes: %w", err)
+		}
 	}
 
 	return nil
@@ -84,11 +86,8 @@ func NewAPI() (core.API, []core.ContextBuilderOption, error) {
 	return api, nil, nil
 }
 
-func (a *API) buildPprofRoutes(authMw, accessMw echo.MiddlewareFunc, sharedSecretEnabled bool) []router.Route {
+func (a *API) buildPprofRoutes(authMw, accessMw echo.MiddlewareFunc) []router.Route {
 	applyAuth := func(route ...router.RouteOption) []router.RouteOption {
-		if sharedSecretEnabled {
-			return append(route, router.WithMiddlewares(authMw))
-		}
 		return append(route, router.WithAccess(core.ACCESS_ADMIN_ROLE), router.WithMiddlewares(authMw, accessMw))
 	}
 
@@ -228,6 +227,32 @@ func (a *API) buildPprofRoutes(authMw, accessMw echo.MiddlewareFunc, sharedSecre
 			)...,
 		),
 	}
+}
+
+func (a *API) buildInternalPprofRoutes(authMw echo.MiddlewareFunc) []router.Route {
+	routes := []struct {
+		path    string
+		handler echo.HandlerFunc
+	}{
+		{"/api/internal/pprof/cmdline", a.pprofCmdline},
+		{"/api/internal/pprof/symbol", a.pprofSymbol},
+		{"/api/internal/pprof/goroutine", a.pprofGoroutine},
+		{"/api/internal/pprof/heap", a.pprofHeap},
+		{"/api/internal/pprof/threadcreate", a.pprofThreadcreate},
+		{"/api/internal/pprof/block", a.pprofBlock},
+		{"/api/internal/pprof/mutex", a.pprofMutex},
+		{"/api/internal/pprof/profile", a.pprofProfile},
+		{"/api/internal/pprof/trace", a.pprofTrace},
+	}
+
+	return lo.Map(routes, func(r struct {
+		path    string
+		handler echo.HandlerFunc
+	}, _ int) router.Route {
+		return router.NewRoute(http.MethodGet, r.path, r.handler,
+			router.WithMiddlewares(authMw),
+		)
+	})
 }
 
 func (a *API) pprofIndex(c echo.Context) error {
