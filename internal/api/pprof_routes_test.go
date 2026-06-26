@@ -26,27 +26,26 @@ func getAdminAPITestOptions() coreTesting.TestContextBuilderOption {
 	)
 }
 
-var pprofGetRoutes = []struct {
+var pprofInternalRoutes = []struct {
 	method string
 	path   string
 }{
-	{http.MethodGet, "/api/debug/pprof/cmdline"},
-	{http.MethodGet, "/api/debug/pprof/symbol"},
-	{http.MethodGet, "/api/debug/pprof/goroutine"},
-	{http.MethodGet, "/api/debug/pprof/heap"},
-	{http.MethodGet, "/api/debug/pprof/threadcreate"},
-	{http.MethodGet, "/api/debug/pprof/block"},
-	{http.MethodGet, "/api/debug/pprof/mutex"},
-	{http.MethodGet, "/api/debug/pprof/status"},
+	{http.MethodGet, "/api/internal/pprof/cmdline"},
+	{http.MethodGet, "/api/internal/pprof/symbol"},
+	{http.MethodGet, "/api/internal/pprof/goroutine"},
+	{http.MethodGet, "/api/internal/pprof/heap"},
+	{http.MethodGet, "/api/internal/pprof/threadcreate"},
+	{http.MethodGet, "/api/internal/pprof/block"},
+	{http.MethodGet, "/api/internal/pprof/mutex"},
 }
 
-// TestPprofRoutes_SharedSecret_ValidBearer verifies that every registered pprof
-// child route returns 200 when the correct bearer token is provided.
+// TestInternalPprofRoutes_ValidBearer verifies that every internal pprof
+// route returns 200 when the correct bearer token is provided.
 // profile and trace use seconds=1 to avoid long-running CPU captures.
-func TestPprofRoutes_SharedSecret_ValidBearer(t *testing.T) {
-	tests := append(pprofGetRoutes,
-		struct{ method, path string }{http.MethodGet, "/api/debug/pprof/profile?seconds=1"},
-		struct{ method, path string }{http.MethodGet, "/api/debug/pprof/trace?seconds=1"},
+func TestInternalPprofRoutes_ValidBearer(t *testing.T) {
+	tests := append(pprofInternalRoutes,
+		struct{ method, path string }{http.MethodGet, "/api/internal/pprof/profile?seconds=1"},
+		struct{ method, path string }{http.MethodGet, "/api/internal/pprof/trace?seconds=1"},
 	)
 
 	for _, r := range tests {
@@ -64,12 +63,12 @@ func TestPprofRoutes_SharedSecret_ValidBearer(t *testing.T) {
 	}
 }
 
-// TestPprofRoutes_SharedSecret_NoBearer verifies that every registered pprof
-// child route returns 401 when no bearer token is provided.
-func TestPprofRoutes_SharedSecret_NoBearer(t *testing.T) {
-	tests := append(pprofGetRoutes,
-		struct{ method, path string }{http.MethodGet, "/api/debug/pprof/profile"},
-		struct{ method, path string }{http.MethodGet, "/api/debug/pprof/trace"},
+// TestInternalPprofRoutes_NoBearer verifies that every internal pprof
+// route returns 401 when no bearer token is provided.
+func TestInternalPprofRoutes_NoBearer(t *testing.T) {
+	tests := append(pprofInternalRoutes,
+		struct{ method, path string }{http.MethodGet, "/api/internal/pprof/profile"},
+		struct{ method, path string }{http.MethodGet, "/api/internal/pprof/trace"},
 	)
 
 	for _, r := range tests {
@@ -86,12 +85,12 @@ func TestPprofRoutes_SharedSecret_NoBearer(t *testing.T) {
 	}
 }
 
-// TestPprofRoutes_SharedSecret_InvalidBearer verifies that an incorrect bearer
-// token is rejected with 401 on all pprof child routes.
-func TestPprofRoutes_SharedSecret_InvalidBearer(t *testing.T) {
-	tests := append(pprofGetRoutes,
-		struct{ method, path string }{http.MethodGet, "/api/debug/pprof/profile"},
-		struct{ method, path string }{http.MethodGet, "/api/debug/pprof/trace"},
+// TestInternalPprofRoutes_InvalidBearer verifies that an incorrect bearer
+// token is rejected with 401 on all internal pprof routes.
+func TestInternalPprofRoutes_InvalidBearer(t *testing.T) {
+	tests := append(pprofInternalRoutes,
+		struct{ method, path string }{http.MethodGet, "/api/internal/pprof/profile"},
+		struct{ method, path string }{http.MethodGet, "/api/internal/pprof/trace"},
 	)
 
 	for _, r := range tests {
