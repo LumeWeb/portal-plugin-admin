@@ -45,12 +45,12 @@ func (a *API) Subdomain() string {
 func (a *API) Configure(r router.Router, accessSvc core.AccessService) error {
 	router.MustDefaultStaticSetup(r, router.NewAppFilesystem(portal_admin.GetFS(), router.AppFilesystemConfig{Domain: a.Config().Config().Core.Domain}))
 
-	apiCfg := core.GetAPIConfig[pluginConfig.APIConfig](a.Context(), internal.PLUGIN_NAME)
+	apiCfg := core.GetAPIConfig[*pluginConfig.APIConfig](a.Context(), internal.PLUGIN_NAME)
 
 	var authMw echo.MiddlewareFunc
 	if apiCfg.PprofSecret != "" {
 		a.Logger().Info("pprof shared secret auth enabled")
-		authMw = pluginMw.PprofSharedSecretAuth(&apiCfg)
+		authMw = pluginMw.PprofSharedSecretAuth(apiCfg)
 	} else {
 		authMw = middleware.AuthMiddleware(a.Context(), middleware.WithAuthPurpose(jwt.PurposeLogin))
 	}
