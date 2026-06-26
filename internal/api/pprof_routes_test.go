@@ -5,68 +5,106 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/labstack/echo/v4"
+	"github.com/stretchr/testify/assert"
+	"go.lumeweb.com/portal-plugin-admin/internal"
 	pluginConfig "go.lumeweb.com/portal-plugin-admin/internal/config"
-	pluginMw "go.lumeweb.com/portal-plugin-admin/internal/api/middleware"
+	coreTesting "go.lumeweb.com/portal/core/testing"
 )
 
-// TestPprofRoutes_SharedSecret_AllChildRoutes verifies that every registered
-// pprof child route accepts the shared secret bearer token and rejects
-// requests without it.
-func TestPprofRoutes_SharedSecret_AllChildRoutes(t *testing.T) {
-	const secret = "test-secret"
-	cfg := &pluginConfig.APIConfig{PprofSecret: secret}
+func TestMain(m *testing.M) {
+	coreTesting.WithOptions(m,
+		coreTesting.WithAPI(internal.PLUGIN_NAME, NewAPI),
+	)
+}
 
-	e := echo.New()
-	authMw := pluginMw.PprofSharedSecretAuth(cfg)
+func getAdminAPITestOptions() coreTesting.TestContextBuilderOption {
+	return coreTesting.CombineOptions(
+		coreTesting.WithAPIConfig(internal.PLUGIN_NAME, &pluginConfig.APIConfig{
+			PprofSecret: "test-secret",
+		}),
+		coreTesting.WithAPIID(internal.PLUGIN_NAME),
+	)
+}
 
-	// Register every pprof route the API exposes, with shared secret middleware.
-	routes := []struct {
-		method string
-		path   string
-	}{
-		{http.MethodGet, "/api/debug/pprof/"},
-		{http.MethodGet, "/api/debug/pprof/cmdline"},
-		{http.MethodGet, "/api/debug/pprof/symbol"},
-		{http.MethodGet, "/api/debug/pprof/goroutine"},
-		{http.MethodGet, "/api/debug/pprof/heap"},
-		{http.MethodGet, "/api/debug/pprof/threadcreate"},
-		{http.MethodGet, "/api/debug/pprof/block"},
-		{http.MethodGet, "/api/debug/pprof/mutex"},
-		{http.MethodGet, "/api/debug/pprof/profile"},
-		{http.MethodGet, "/api/debug/pprof/trace"},
-		{http.MethodGet, "/api/debug/pprof/status"},
+var pprofGetRoutes = []struct {
+	method string
+	path   string
+}{
+	{http.MethodGet, "/api/debug/pprof/cmdline"},
+	{http.MethodGet, "/api/debug/pprof/symbol"},
+	{http.MethodGet, "/api/debug/pprof/goroutine"},
+	{http.MethodGet, "/api/debug/pprof/heap"},
+	{http.MethodGet, "/api/debug/pprof/threadcreate"},
+	{http.MethodGet, "/api/debug/pprof/block"},
+	{http.MethodGet, "/api/debug/pprof/mutex"},
+	{http.MethodGet, "/api/debug/pprof/status"},
+}
+
+// TestPprofRoutes_SharedSecret_ValidBearer verifies that every registered pprof
+// child route returns 200 when the correct bearer token is provided.
+// profile and trace use seconds=1 to avoid long-running CPU captures.
+func TestPprofRoutes_SharedSecret_ValidBearer(t *testing.T) {
+	tests := append(pprofGetRoutes,
+		struct{ method, path string }{http.MethodGet, "/api/debug/pprof/profile?seconds=1"},
+		struct{ method, path string }{http.MethodGet, "/api/debug/pprof/trace?seconds=1"},
+	)
+
+	for _, r := range tests {
+		t.Run(r.path, func(t *testing.T) {
+			coreTesting.RunTestCase(t, func(tb coreTesting.TB, ctx coreTesting.TestContext) {
+				req := ctx.NewAPIRequest(r.method, r.path, nil)
+				req.Header.Set("Authorization", "Bearer test-secret")
+
+				w := httptest.NewRecorder()
+				ctx.Router().ServeHTTP(w, req)
+
+				assert.Equal(tb, http.StatusOK, w.Code)
+			}, getAdminAPITestOptions())
+		})
 	}
+}
 
-	// Use a dummy handler that returns 200 so we can verify middleware pass-through.
-	dummyHandler := func(c echo.Context) error {
-		return c.String(http.StatusOK, "ok")
+// TestPprofRoutes_SharedSecret_NoBearer verifies that every registered pprof
+// child route returns 401 when no bearer token is provided.
+func TestPprofRoutes_SharedSecret_NoBearer(t *testing.T) {
+	tests := append(pprofGetRoutes,
+		struct{ method, path string }{http.MethodGet, "/api/debug/pprof/profile"},
+		struct{ method, path string }{http.MethodGet, "/api/debug/pprof/trace"},
+	)
+
+	for _, r := range tests {
+		t.Run(r.path, func(t *testing.T) {
+			coreTesting.RunTestCase(t, func(tb coreTesting.TB, ctx coreTesting.TestContext) {
+				req := ctx.NewAPIRequest(r.method, r.path, nil)
+
+				w := httptest.NewRecorder()
+				ctx.Router().ServeHTTP(w, req)
+
+				assert.Equal(tb, http.StatusUnauthorized, w.Code)
+			}, getAdminAPITestOptions())
+		})
 	}
+}
 
-	for _, r := range routes {
-		e.Add(r.method, r.path, dummyHandler, authMw)
-	}
+// TestPprofRoutes_SharedSecret_InvalidBearer verifies that an incorrect bearer
+// token is rejected with 401 on all pprof child routes.
+func TestPprofRoutes_SharedSecret_InvalidBearer(t *testing.T) {
+	tests := append(pprofGetRoutes,
+		struct{ method, path string }{http.MethodGet, "/api/debug/pprof/profile"},
+		struct{ method, path string }{http.MethodGet, "/api/debug/pprof/trace"},
+	)
 
-	for _, tc := range routes {
-		t.Run(tc.path, func(t *testing.T) {
-			// With bearer token -> should pass auth
-			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
-			req.Header.Set("Authorization", "Bearer "+secret)
-			rec := httptest.NewRecorder()
-			e.ServeHTTP(rec, req)
+	for _, r := range tests {
+		t.Run(r.path, func(t *testing.T) {
+			coreTesting.RunTestCase(t, func(tb coreTesting.TB, ctx coreTesting.TestContext) {
+				req := ctx.NewAPIRequest(r.method, r.path, nil)
+				req.Header.Set("Authorization", "Bearer wrong-secret")
 
-			if rec.Code != http.StatusOK {
-				t.Errorf("with bearer token: expected 200, got %d", rec.Code)
-			}
+				w := httptest.NewRecorder()
+				ctx.Router().ServeHTTP(w, req)
 
-			// Without bearer token -> should be 401
-			req2 := httptest.NewRequest(http.MethodGet, tc.path, nil)
-			rec2 := httptest.NewRecorder()
-			e.ServeHTTP(rec2, req2)
-
-			if rec2.Code != http.StatusUnauthorized {
-				t.Errorf("without bearer token: expected 401, got %d", rec2.Code)
-			}
+				assert.Equal(tb, http.StatusUnauthorized, w.Code)
+			}, getAdminAPITestOptions())
 		})
 	}
 }
