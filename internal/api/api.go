@@ -15,6 +15,7 @@ import (
 	"go.lumeweb.com/portal-middleware/auth/jwt"
 	"go.lumeweb.com/portal-plugin-admin/internal"
 	pluginConfig "go.lumeweb.com/portal-plugin-admin/internal/config"
+	pluginMw "go.lumeweb.com/portal-plugin-admin/internal/api/middleware"
 	router "go.lumeweb.com/portal-router"
 	"go.lumeweb.com/portal/config"
 	"go.lumeweb.com/portal/core"
@@ -44,10 +45,18 @@ func (a *API) Subdomain() string {
 func (a *API) Configure(r router.Router, accessSvc core.AccessService) error {
 	router.MustDefaultStaticSetup(r, router.NewAppFilesystem(portal_admin.GetFS(), router.AppFilesystemConfig{Domain: a.Config().Config().Core.Domain}))
 
-	authMw := middleware.AuthMiddleware(a.Context(), middleware.WithAuthPurpose(jwt.PurposeLogin))
+	apiCfg := core.GetAPIConfig[pluginConfig.APIConfig](a.Context(), internal.PLUGIN_NAME)
+
+	var authMw echo.MiddlewareFunc
+	if apiCfg.PprofSecret != "" {
+		a.Logger().Info("pprof shared secret auth enabled")
+		authMw = pluginMw.PprofSharedSecretAuth(&apiCfg)
+	} else {
+		authMw = middleware.AuthMiddleware(a.Context(), middleware.WithAuthPurpose(jwt.PurposeLogin))
+	}
 	accessMw := middleware.AccessMiddleware(a.Context())
 
-	routes := a.buildPprofRoutes(authMw, accessMw)
+	routes := a.buildPprofRoutes(authMw, accessMw, apiCfg.PprofSecret != "")
 	if err := router.RegisterRoutes(r, accessSvc, a.Subdomain(), routes); err != nil {
 		return fmt.Errorf("failed to register pprof routes: %w", err)
 	}
@@ -75,141 +84,148 @@ func NewAPI() (core.API, []core.ContextBuilderOption, error) {
 	return api, nil, nil
 }
 
-func (a *API) buildPprofRoutes(authMw, accessMw echo.MiddlewareFunc) []router.Route {
+func (a *API) buildPprofRoutes(authMw, accessMw echo.MiddlewareFunc, sharedSecretEnabled bool) []router.Route {
+	applyAuth := func(route ...router.RouteOption) []router.RouteOption {
+		if sharedSecretEnabled {
+			return append(route, router.WithMiddlewares(authMw))
+		}
+		return append(route, router.WithAccess(core.ACCESS_ADMIN_ROLE), router.WithMiddlewares(authMw, accessMw))
+	}
+
 	return []router.Route{
 		router.NewRoute(http.MethodGet, "/api/debug/pprof/", a.pprofIndex,
-			router.WithSwaggerOptions(
-				router.WithSummary("pprof index"),
-				router.WithDescription("Returns a page listing available pprof profiles."),
-				router.WithTags("Profiling"),
-				router.WithSuccessResponse(http.StatusOK, "HTML index of available profiles"),
-			),
-			router.WithAccess(core.ACCESS_ADMIN_ROLE),
-			router.WithMiddlewares(authMw, accessMw),
+			applyAuth(
+				router.WithSwaggerOptions(
+					router.WithSummary("pprof index"),
+					router.WithDescription("Returns a page listing available pprof profiles."),
+					router.WithTags("Profiling"),
+					router.WithSuccessResponse(http.StatusOK, "HTML index of available profiles"),
+				),
+			)...,
 		),
 		router.NewRoute(http.MethodGet, "/api/debug/pprof/profile", a.pprofProfile,
-			router.WithSwaggerOptions(
-				router.WithSummary("CPU profile"),
-				router.WithDescription("Returns a CPU profile for the specified duration. Supports 'seconds' and 'debug' query parameters."),
-				router.WithTags("Profiling"),
-				router.WithSuccessResponse(http.StatusOK, "CPU profile data"),
-			),
-			router.WithAccess(core.ACCESS_ADMIN_ROLE),
-			router.WithMiddlewares(authMw, accessMw),
+			applyAuth(
+				router.WithSwaggerOptions(
+					router.WithSummary("CPU profile"),
+					router.WithDescription("Returns a CPU profile for the specified duration. Supports 'seconds' and 'debug' query parameters."),
+					router.WithTags("Profiling"),
+					router.WithSuccessResponse(http.StatusOK, "CPU profile data"),
+				),
+			)...,
 		),
 		router.NewRoute(http.MethodGet, "/api/debug/pprof/trace", a.pprofTrace,
-			router.WithSwaggerOptions(
-				router.WithSummary("Execution trace"),
-				router.WithDescription("Returns an execution trace. Supports 'seconds' query parameter."),
-				router.WithTags("Profiling"),
-				router.WithSuccessResponse(http.StatusOK, "Execution trace data"),
-			),
-			router.WithAccess(core.ACCESS_ADMIN_ROLE),
-			router.WithMiddlewares(authMw, accessMw),
+			applyAuth(
+				router.WithSwaggerOptions(
+					router.WithSummary("Execution trace"),
+					router.WithDescription("Returns an execution trace. Supports 'seconds' query parameter."),
+					router.WithTags("Profiling"),
+					router.WithSuccessResponse(http.StatusOK, "Execution trace data"),
+				),
+			)...,
 		),
 		router.NewRoute(http.MethodGet, "/api/debug/pprof/cmdline", a.pprofCmdline,
-			router.WithSwaggerOptions(
-				router.WithSummary("Command line"),
-				router.WithDescription("Returns the command line of the running program."),
-				router.WithTags("Profiling"),
-				router.WithSuccessResponse(http.StatusOK, "Command line output"),
-			),
-			router.WithAccess(core.ACCESS_ADMIN_ROLE),
-			router.WithMiddlewares(authMw, accessMw),
+			applyAuth(
+				router.WithSwaggerOptions(
+					router.WithSummary("Command line"),
+					router.WithDescription("Returns the command line of the running program."),
+					router.WithTags("Profiling"),
+					router.WithSuccessResponse(http.StatusOK, "Command line output"),
+				),
+			)...,
 		),
 		router.NewRoute(http.MethodGet, "/api/debug/pprof/symbol", a.pprofSymbol,
-			router.WithSwaggerOptions(
-				router.WithSummary("Symbol lookup"),
-				router.WithDescription("Looks up program counters and returns function names."),
-				router.WithTags("Profiling"),
-				router.WithSuccessResponse(http.StatusOK, "Symbol lookup results"),
-			),
-			router.WithAccess(core.ACCESS_ADMIN_ROLE),
-			router.WithMiddlewares(authMw, accessMw),
+			applyAuth(
+				router.WithSwaggerOptions(
+					router.WithSummary("Symbol lookup"),
+					router.WithDescription("Looks up program counters and returns function names."),
+					router.WithTags("Profiling"),
+					router.WithSuccessResponse(http.StatusOK, "Symbol lookup results"),
+				),
+			)...,
 		),
 		router.NewRoute(http.MethodGet, "/api/debug/pprof/goroutine", a.pprofGoroutine,
-			router.WithSwaggerOptions(
-				router.WithSummary("Goroutine profile"),
-				router.WithDescription("Returns stack traces of all current goroutines."),
-				router.WithTags("Profiling"),
-				router.WithSuccessResponse(http.StatusOK, "Goroutine profile data"),
-			),
-			router.WithAccess(core.ACCESS_ADMIN_ROLE),
-			router.WithMiddlewares(authMw, accessMw),
+			applyAuth(
+				router.WithSwaggerOptions(
+					router.WithSummary("Goroutine profile"),
+					router.WithDescription("Returns stack traces of all current goroutines."),
+					router.WithTags("Profiling"),
+					router.WithSuccessResponse(http.StatusOK, "Goroutine profile data"),
+				),
+			)...,
 		),
 		router.NewRoute(http.MethodGet, "/api/debug/pprof/heap", a.pprofHeap,
-			router.WithSwaggerOptions(
-				router.WithSummary("Heap profile"),
-				router.WithDescription("Returns a sampling of memory allocations."),
-				router.WithTags("Profiling"),
-				router.WithSuccessResponse(http.StatusOK, "Heap profile data"),
-			),
-			router.WithAccess(core.ACCESS_ADMIN_ROLE),
-			router.WithMiddlewares(authMw, accessMw),
+			applyAuth(
+				router.WithSwaggerOptions(
+					router.WithSummary("Heap profile"),
+					router.WithDescription("Returns a sampling of memory allocations."),
+					router.WithTags("Profiling"),
+					router.WithSuccessResponse(http.StatusOK, "Heap profile data"),
+				),
+			)...,
 		),
 		router.NewRoute(http.MethodGet, "/api/debug/pprof/threadcreate", a.pprofThreadcreate,
-			router.WithSwaggerOptions(
-				router.WithSummary("Thread creation profile"),
-				router.WithDescription("Returns stack traces that led to the creation of new OS threads."),
-				router.WithTags("Profiling"),
-				router.WithSuccessResponse(http.StatusOK, "Thread creation profile data"),
-			),
-			router.WithAccess(core.ACCESS_ADMIN_ROLE),
-			router.WithMiddlewares(authMw, accessMw),
+			applyAuth(
+				router.WithSwaggerOptions(
+					router.WithSummary("Thread creation profile"),
+					router.WithDescription("Returns stack traces that led to the creation of new OS threads."),
+					router.WithTags("Profiling"),
+					router.WithSuccessResponse(http.StatusOK, "Thread creation profile data"),
+				),
+			)...,
 		),
 		router.NewRoute(http.MethodGet, "/api/debug/pprof/block", a.pprofBlock,
-			router.WithSwaggerOptions(
-				router.WithSummary("Block profile"),
-				router.WithDescription("Returns stack traces that led to blocking on synchronization primitives."),
-				router.WithTags("Profiling"),
-				router.WithSuccessResponse(http.StatusOK, "Block profile data"),
-			),
-			router.WithAccess(core.ACCESS_ADMIN_ROLE),
-			router.WithMiddlewares(authMw, accessMw),
+			applyAuth(
+				router.WithSwaggerOptions(
+					router.WithSummary("Block profile"),
+					router.WithDescription("Returns stack traces that led to blocking on synchronization primitives."),
+					router.WithTags("Profiling"),
+					router.WithSuccessResponse(http.StatusOK, "Block profile data"),
+				),
+			)...,
 		),
 		router.NewRoute(http.MethodGet, "/api/debug/pprof/mutex", a.pprofMutex,
-			router.WithSwaggerOptions(
-				router.WithSummary("Mutex profile"),
-				router.WithDescription("Returns stack traces of holders of contended mutexes."),
-				router.WithTags("Profiling"),
-				router.WithSuccessResponse(http.StatusOK, "Mutex profile data"),
-			),
-			router.WithAccess(core.ACCESS_ADMIN_ROLE),
-			router.WithMiddlewares(authMw, accessMw),
+			applyAuth(
+				router.WithSwaggerOptions(
+					router.WithSummary("Mutex profile"),
+					router.WithDescription("Returns stack traces of holders of contended mutexes."),
+					router.WithTags("Profiling"),
+					router.WithSuccessResponse(http.StatusOK, "Mutex profile data"),
+				),
+			)...,
 		),
 		router.NewRoute(http.MethodGet, "/api/debug/pprof/status", a.pprofStatus,
-			router.WithSwaggerOptions(
-				router.WithSummary("Profiling status"),
-				router.WithDescription("Returns the current block and mutex profiling rates."),
-				router.WithTags("Profiling"),
-				router.WithSuccessResponse(http.StatusOK, "Current profiling status",
-					router.WithJSONContent(ProfilingStatusResponse{}),
+			applyAuth(
+				router.WithSwaggerOptions(
+					router.WithSummary("Profiling status"),
+					router.WithDescription("Returns the current block and mutex profiling rates."),
+					router.WithTags("Profiling"),
+					router.WithSuccessResponse(http.StatusOK, "Current profiling status",
+						router.WithJSONContent(ProfilingStatusResponse{}),
+					),
 				),
-			),
-			router.WithAccess(core.ACCESS_ADMIN_ROLE),
-			router.WithMiddlewares(authMw, accessMw),
+			)...,
 		),
 		router.NewRoute(http.MethodPut, "/api/debug/pprof/block", a.pprofBlockUpdate,
-			router.WithSwaggerOptions(
-				router.WithSummary("Set block profile rate"),
-				router.WithDescription("Sets the block profiling rate. 0 disables, 1 captures all, higher values sample."),
-				router.WithTags("Profiling"),
-				router.WithRequestBody(BlockProfileRequest{}, "Block profile rate", true),
-				router.WithSuccessResponse(http.StatusNoContent, "Block profile rate updated"),
-			),
-			router.WithAccess(core.ACCESS_ADMIN_ROLE),
-			router.WithMiddlewares(authMw, accessMw),
+			applyAuth(
+				router.WithSwaggerOptions(
+					router.WithSummary("Set block profile rate"),
+					router.WithDescription("Sets the block profiling rate. 0 disables, 1 captures all, higher values sample."),
+					router.WithTags("Profiling"),
+					router.WithRequestBody(BlockProfileRequest{}, "Block profile rate", true),
+					router.WithSuccessResponse(http.StatusNoContent, "Block profile rate updated"),
+				),
+			)...,
 		),
 		router.NewRoute(http.MethodPut, "/api/debug/pprof/mutex", a.pprofMutexUpdate,
-			router.WithSwaggerOptions(
-				router.WithSummary("Set mutex profile fraction"),
-				router.WithDescription("Sets the mutex profiling fraction. 0 disables, 1 captures all, 100 samples 1%."),
-				router.WithTags("Profiling"),
-				router.WithRequestBody(MutexProfileRequest{}, "Mutex profile fraction", true),
-				router.WithSuccessResponse(http.StatusNoContent, "Mutex profile fraction updated"),
-			),
-			router.WithAccess(core.ACCESS_ADMIN_ROLE),
-			router.WithMiddlewares(authMw, accessMw),
+			applyAuth(
+				router.WithSwaggerOptions(
+					router.WithSummary("Set mutex profile fraction"),
+					router.WithDescription("Sets the mutex profiling fraction. 0 disables, 1 captures all, 100 samples 1%."),
+					router.WithTags("Profiling"),
+					router.WithRequestBody(MutexProfileRequest{}, "Mutex profile fraction", true),
+					router.WithSuccessResponse(http.StatusNoContent, "Mutex profile fraction updated"),
+				),
+			)...,
 		),
 	}
 }
