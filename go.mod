@@ -11,8 +11,8 @@ require (
 	go.lumeweb.com/portal v0.4.2-0.20260204232917-ecd0f81a80f1
 	go.lumeweb.com/portal-middleware v0.3.4
 	go.lumeweb.com/portal-router v0.7.0
-	go.lumeweb.com/web/go/portal-admin v0.0.0-20260705022033-391c7ad5f582
-	go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20260705022033-391c7ad5f582
+	go.lumeweb.com/web/go/portal-admin v0.0.0-20260705034720-aefe91c007ac
+	go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20260705034720-aefe91c007ac
 )
 
 require (
