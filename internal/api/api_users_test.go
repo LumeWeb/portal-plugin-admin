@@ -156,7 +156,8 @@ func TestUserResponse_DoesNotExposeSensitiveFields(t *testing.T) {
 		PasswordResets:     nil,
 	}
 
-	resp := userToResponse(user)
+	var resp UserResponse
+	require.NoError(t, resp.FromModel(user))
 	raw, err := json.Marshal(resp)
 	require.NoError(t, err)
 	body := strings.ToLower(string(raw))

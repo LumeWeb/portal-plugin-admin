@@ -132,19 +132,12 @@ func (a *API) listUsers(c echo.Context) error {
 		return ctx.Error(err, http.StatusInternalServerError)
 	}
 
-	responses := make([]UserResponse, 0, len(users))
-	for i := range users {
-		responses = append(responses, userToResponse(&users[i]))
-	}
-
-	resultCount := queryutil.GetResultCount(responses)
+	resultCount := queryutil.GetResultCount(users)
 	c.Response().Header().Set("Content-Range", queryutil.FormatContentRange(userListEntityName, pagination, resultCount, int(total)))
 	c.Response().Header().Set("X-Total-Count", strconv.FormatInt(total, 10))
 
-	return c.JSON(http.StatusOK, UserListResponse{
-		Data:  responses,
-		Total: total,
-	})
+	resp := UserListResponse{Total: total}
+	return httputil.EncodeResponse(ctx, users, &resp)
 }
 
 // createUser creates a portal account via UserService.CreateAccount and then
@@ -180,7 +173,16 @@ func (a *API) createUser(c echo.Context) error {
 		user = fresh
 	}
 
-	return c.JSON(http.StatusCreated, userToResponse(user))
+	resp := UserResponse{}
+	if err := resp.FromModel(user); err != nil {
+		return a.handleUserServiceError(ctx, err)
+	}
+	// httputil.EncodeResponse always writes 200, so set the 201 via echo's
+	// response hook before encoding.
+	ctx.Response().Before(func() {
+		ctx.Response().Status = http.StatusCreated
+	})
+	return httputil.EncodeResponse(ctx, user, &resp)
 }
 
 // getUser returns a single user by numeric ID.
@@ -203,7 +205,11 @@ func (a *API) getUser(c echo.Context) error {
 		return ctx.Error(core.NewAccountError(core.ErrKeyUserNotFound, nil), http.StatusNotFound)
 	}
 
-	return ctx.JSON(http.StatusOK, userToResponse(user))
+	resp := UserResponse{}
+	if err := resp.FromModel(user); err != nil {
+		return a.handleUserServiceError(ctx, err)
+	}
+	return httputil.EncodeResponse(ctx, user, &resp)
 }
 
 // updateUser partially updates a user via the dedicated UserUpdateRequest
@@ -269,7 +275,11 @@ func (a *API) updateUser(c echo.Context) error {
 		return ctx.Error(core.NewAccountError(core.ErrKeyUserNotFound, nil), http.StatusNotFound)
 	}
 
-	return ctx.JSON(http.StatusOK, userToResponse(fresh))
+	resp := UserResponse{}
+	if err := resp.FromModel(fresh); err != nil {
+		return a.handleUserServiceError(ctx, err)
+	}
+	return httputil.EncodeResponse(ctx, fresh, &resp)
 }
 
 // deleteUser permanently deletes a user via UserService.DeleteAccount. It

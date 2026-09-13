@@ -21,7 +21,8 @@ var (
 	_ httputil.DTOValidator                   = (*UserUpdateRequest)(nil)
 	_ httputil.DTORequest[*UserUpdateRequest] = (*UserUpdateRequest)(nil)
 
-	_ httputil.DTOResponse[*models.User] = (*UserResponse)(nil)
+	_ httputil.DTOResponse[*models.User]  = (*UserResponse)(nil)
+	_ httputil.DTOResponse[[]models.User] = (*UserListResponse)(nil)
 )
 
 // UserCreateRequest is the admin payload for creating a portal account.
@@ -154,18 +155,21 @@ func (r *UserResponse) FromModel(model *models.User) error {
 	return nil
 }
 
-// userToResponse is the single reusable converter used by every handler. It
-// explicitly copies only approved fields, so a future drift in the User model
-// can never surface sensitive columns in an API response.
-func userToResponse(user *models.User) UserResponse {
-	var resp UserResponse
-	_ = resp.FromModel(user)
-	return resp
-}
-
 // UserListResponse is the standard paginated list envelope (Refine-compatible
-// Simple REST data provider shape): data plus total.
+// Simple REST data provider shape): data plus total. Its FromModel builds the
+// safe per-user payloads from the raw models; Total is populated by the list
+// handler (via the separate filtered count) before EncodeResponse runs.
 type UserListResponse struct {
 	Data  []UserResponse `json:"data"`
 	Total int64          `json:"total"`
+}
+
+func (r *UserListResponse) FromModel(modelsList []models.User) error {
+	r.Data = make([]UserResponse, len(modelsList))
+	for i := range modelsList {
+		if err := r.Data[i].FromModel(&modelsList[i]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
