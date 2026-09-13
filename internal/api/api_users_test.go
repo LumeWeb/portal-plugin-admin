@@ -49,7 +49,7 @@ func setupUserAdminAuth(tb testing.TB, ctx coreTesting.TestContext, userID uint)
 
 	jwtHelper := coreTesting.NewJWTHelper(ctx)
 	token, err := jwtHelper.CreateLoginToken(userID)
-	require.NoError(tb, err, "failed to create admin login token")
+	require.NoError(tb, err, "failed to create admin login JWT")
 	return token
 }
 
@@ -79,7 +79,7 @@ func TestUserUpdateRequest_HasUpdates(t *testing.T) {
 		{"only last name", UserUpdateRequest{LastName: strPtr("Doe")}, true},
 		{"only email", UserUpdateRequest{Email: strPtr("j@example.com")}, true},
 		{"explicit false verified", UserUpdateRequest{Verified: boolPtr(false)}, true},
-		{"only password", UserUpdateRequest{Password: strPtr("secret")}, true},
+		{"only password", UserUpdateRequest{Password: strPtr("s3cret")}, true},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -254,6 +254,7 @@ func TestUserList_FilterAndPagination(t *testing.T) {
 		assert.Equal(t, int64(3), page.Total, "total reflects the full filtered set, not the page")
 		assert.Len(t, page.Data, 2)
 		assert.Contains(t, rec.Header().Get("Content-Range"), "users 0-1/3")
+		assert.Equal(t, "3", rec.Header().Get("X-Total-Count"), "X-Total-Count reflects the full filtered total, not the page size")
 
 		// Filter by exact email.
 		rec = userRequest(tb, ctx, http.MethodGet, "/api/users?email=b@example.com", nil, token)

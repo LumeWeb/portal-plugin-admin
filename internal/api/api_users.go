@@ -139,7 +139,7 @@ func (a *API) listUsers(c echo.Context) error {
 
 	resultCount := queryutil.GetResultCount(responses)
 	c.Response().Header().Set("Content-Range", queryutil.FormatContentRange(userListEntityName, pagination, resultCount, int(total)))
-	c.Response().Header().Set("X-Total-Count", strconv.Itoa(resultCount))
+	c.Response().Header().Set("X-Total-Count", strconv.FormatInt(total, 10))
 
 	return c.JSON(http.StatusOK, UserListResponse{
 		Data:  responses,
