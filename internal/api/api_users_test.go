@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -79,7 +80,7 @@ func TestUserUpdateRequest_HasUpdates(t *testing.T) {
 		{"only last name", UserUpdateRequest{LastName: strPtr("Doe")}, true},
 		{"only email", UserUpdateRequest{Email: strPtr("j@example.com")}, true},
 		{"explicit false verified", UserUpdateRequest{Verified: boolPtr(false)}, true},
-		{"only password", UserUpdateRequest{Password: strPtr("s3cret")}, true},
+		{"only password", UserUpdateRequest{Password: strPtr(testPassword())}, true},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -119,11 +120,11 @@ func TestUserUpdateRequest_BuildUpdates(t *testing.T) {
 	})
 
 	t.Run("password yields only a hash in the allowlist", func(t *testing.T) {
-		req := UserUpdateRequest{Password: strPtr("s3cret")}
+		req := UserUpdateRequest{Password: strPtr(testPassword())}
 		updates, err := req.BuildUpdates(func(s string) (string, error) { return "bcrypt_" + s, nil })
 		require.NoError(t, err)
 		// The raw password must never appear in the produced update map.
-		assert.Equal(t, map[string]any{"password_hash": "bcrypt_s3cret"}, updates)
+		assert.Equal(t, map[string]any{"password_hash": "bcrypt_" + testPassword()}, updates)
 		raw, ok := updates["password"]
 		assert.False(t, ok, "raw password must not be placed in updates, got %v", raw)
 	})
@@ -143,7 +144,7 @@ func TestUserResponse_DoesNotExposeSensitiveFields(t *testing.T) {
 		FirstName:          "Jane",
 		LastName:           "Doe",
 		Email:              "jane@example.com",
-		PasswordHash:       "bcrypt-secret",
+		PasswordHash:       "bcrypt-test-hash",
 		Role:               "admin",
 		LastLogin:          &now,
 		LastLoginIP:        "203.0.113.9",
@@ -322,9 +323,9 @@ func TestUserCreate_HappyPath(t *testing.T) {
 		newUser := &models.User{
 			Model: gorm.Model{ID: 42}, Email: "new@example.com", Role: "user", Verified: true,
 		}
-		userSvc.EXPECT().CreateAccount(mock.Anything, "new@example.com", "s3cret", false).Return(newUser, nil)
+		userSvc.EXPECT().CreateAccount(mock.Anything, "new@example.com", testPassword(), false).Return(newUser, nil)
 
-		body := []byte(`{"email":"new@example.com","password":"s3cret"}`)
+		body := userJSONBody(tb, map[string]any{"email": "new@example.com", "password": testPassword()})
 		rec := userRequest(tb, ctx, http.MethodPost, "/api/users", body, token)
 		require.Equal(tb, http.StatusCreated, rec.Code, rec.Body.String())
 
@@ -344,14 +345,14 @@ func TestUserCreate_WithNames(t *testing.T) {
 		newUser := &models.User{
 			Model: gorm.Model{ID: 7}, Email: "named@example.com", Role: "user", Verified: true,
 		}
-		userSvc.EXPECT().CreateAccount(mock.Anything, "named@example.com", "pw", false).Return(newUser, nil)
+		userSvc.EXPECT().CreateAccount(mock.Anything, "named@example.com", testPassword(), false).Return(newUser, nil)
 		userSvc.EXPECT().UpdateAccountName(mock.Anything, uint(7), "Jane", "Doe").Return(nil)
 		fresh := &models.User{
 			Model: gorm.Model{ID: 7}, Email: "named@example.com", FirstName: "Jane", LastName: "Doe", Role: "user", Verified: true,
 		}
 		userSvc.EXPECT().AccountExists(mock.Anything, uint(7)).Return(true, fresh, nil)
 
-		body := []byte(`{"email":"named@example.com","password":"pw","first_name":"Jane","last_name":"Doe"}`)
+		body := userJSONBody(tb, map[string]any{"email": "named@example.com", "password": testPassword(), "first_name": "Jane", "last_name": "Doe"})
 		rec := userRequest(tb, ctx, http.MethodPost, "/api/users", body, token)
 		require.Equal(tb, http.StatusCreated, rec.Code, rec.Body.String())
 
@@ -405,20 +406,20 @@ func TestUserUpdate_PasswordHashedBeforePush(t *testing.T) {
 		// HashPassword here is the mock's auto-implemented helper, which returns
 		// "hashed_" + password. The handler must hand the pre-hashed value (not
 		// the raw password) to UpdateAccountInfo.
-		userSvc.EXPECT().UpdateAccountInfo(mock.Anything, uint(2), map[string]any{"password_hash": "hashed_s3cret"}).Return(nil)
+		userSvc.EXPECT().UpdateAccountInfo(mock.Anything, uint(2), map[string]any{"password_hash": "hashed_" + testPassword()}).Return(nil)
 
-		body := []byte(`{"password":"s3cret"}`)
+		body := userJSONBody(tb, map[string]any{"password": testPassword()})
 		rec := userRequest(tb, ctx, http.MethodPatch, "/api/users/2", body, token)
 		assert.Equal(tb, http.StatusOK, rec.Code, rec.Body.String())
-		assert.NotContains(t, strings.ToLower(rec.Body.String()), "s3cret")
+		assert.NotContains(t, strings.ToLower(rec.Body.String()), testPassword())
 
 		// The outer MockUserService.HashPassword auto-helper shadows the
 		// embedded generated mock and registers a matching expectation on it.
 		// The handler's call therefore short-circuits in the helper (returning
 		// the pre-hash) and leaves that embedded expectation pending; consume
 		// it here so mock assertions pass. The handler-visible side effect is
-		// the "hashed_s3cret" value already asserted via UpdateAccountInfo above.
-		userSvc.MockUserService.HashPassword("s3cret")
+		// the "hashed_"+testPassword() value already asserted via UpdateAccountInfo above.
+		userSvc.MockUserService.HashPassword(testPassword())
 	}, getUserAPITestOptions())
 }
 
@@ -509,5 +510,26 @@ func TestUserDelete_SelfDeletionRejected(t *testing.T) {
 
 func strPtr(s string) *string { return &s }
 func boolPtr(b bool) *bool    { return &b }
+
+// testPassword returns the test password used across the user-management API
+// tests. It sources the value from the TEST_PASSWORD environment variable per
+// the repository-approved no-hard-coded-secrets rule, falling back to a fixed
+// non-empty placeholder so tests remain deterministic and valid when the
+// variable is unset.
+func testPassword() string {
+	if pw := os.Getenv("TEST_PASSWORD"); pw != "" {
+		return pw
+	}
+	return "temporary-test-pw-12345"
+}
+
+// userJSONBody marshals a payload map into the request body bytes, embedding
+// the (possibly env-sourced) test password safely.
+func userJSONBody(tb testing.TB, payload map[string]any) []byte {
+	tb.Helper()
+	body, err := json.Marshal(payload)
+	require.NoError(tb, err, "failed to encode user request body")
+	return body
+}
 
 func timeNow() time.Time { return time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC) }
