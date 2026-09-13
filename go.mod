@@ -11,8 +11,11 @@ require (
 	go.lumeweb.com/portal v0.4.2-0.20260204232917-ecd0f81a80f1
 	go.lumeweb.com/portal-middleware v0.3.4
 	go.lumeweb.com/portal-router v0.7.0
+	go.lumeweb.com/queryutil v0.3.15
 	go.lumeweb.com/web/go/portal-admin v0.0.0-20260904063331-5621276e9357
 	go.lumeweb.com/web/go/portal-plugin-admin v0.0.0-20260904063331-5621276e9357
+	go.uber.org/zap v1.27.1
+	gorm.io/gorm v1.31.1
 )
 
 require (
@@ -168,7 +171,6 @@ require (
 	go.lumeweb.com/configmanager v0.3.24 // indirect
 	go.lumeweb.com/event/v2 v2.1.0 // indirect
 	go.lumeweb.com/gswagger v0.20.12 // indirect
-	go.lumeweb.com/queryutil v0.3.15 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.14.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.64.0 // indirect
@@ -192,7 +194,6 @@ require (
 	go.sia.tech/mux v1.4.0 // indirect
 	go.sia.tech/renterd/v2 v2.4.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.1 // indirect
 	go.uber.org/zap/exp v0.3.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	golang.org/x/crypto v0.47.0 // indirect
@@ -215,7 +216,6 @@ require (
 	gorm.io/driver/postgres v1.6.0 // indirect
 	gorm.io/driver/sqlite v1.6.0 // indirect
 	gorm.io/driver/sqlserver v1.6.3 // indirect
-	gorm.io/gorm v1.31.1 // indirect
 	gorm.io/plugin/dbresolver v1.6.2 // indirect
 	gorm.io/plugin/opentelemetry v0.1.16 // indirect
 	gorm.io/plugin/prometheus v0.1.0 // indirect

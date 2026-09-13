@@ -12,11 +12,11 @@ import (
 
 	"github.com/samber/lo"
 	"go.lumeweb.com/httputil"
-	"go.lumeweb.com/portal-middleware/middleware"
 	"go.lumeweb.com/portal-middleware/auth/jwt"
+	"go.lumeweb.com/portal-middleware/middleware"
 	"go.lumeweb.com/portal-plugin-admin/internal"
-	pluginConfig "go.lumeweb.com/portal-plugin-admin/internal/config"
 	pluginMw "go.lumeweb.com/portal-plugin-admin/internal/api/middleware"
+	pluginConfig "go.lumeweb.com/portal-plugin-admin/internal/config"
 	router "go.lumeweb.com/portal-router"
 	"go.lumeweb.com/portal/config"
 	"go.lumeweb.com/portal/core"
@@ -52,6 +52,11 @@ func (a *API) Configure(r router.Router, accessSvc core.AccessService) error {
 	routes := a.buildPprofRoutes(authMw, accessMw)
 	if err := router.RegisterRoutes(r, accessSvc, a.Subdomain(), routes); err != nil {
 		return fmt.Errorf("failed to register pprof routes: %w", err)
+	}
+
+	userRoutes := a.buildUserRoutes(authMw, accessMw)
+	if err := router.RegisterRoutes(r, accessSvc, a.Subdomain(), userRoutes); err != nil {
+		return fmt.Errorf("failed to register user routes: %w", err)
 	}
 
 	apiCfg := core.GetAPIConfig[*pluginConfig.APIConfig](a.Context(), internal.PLUGIN_NAME)
@@ -310,7 +315,7 @@ func (a *API) pprofStatus(c echo.Context) error {
 
 	model := &ProfilingStatusResponse{
 		BlockProfileRate: int(a.blockProfileRate.Load()),
-		MutexFraction:   int(a.mutexFraction.Load()),
+		MutexFraction:    int(a.mutexFraction.Load()),
 	}
 
 	var responseDto ProfilingStatusResponse
