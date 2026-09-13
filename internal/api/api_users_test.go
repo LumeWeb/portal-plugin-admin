@@ -411,7 +411,7 @@ func TestUserUpdate_PasswordHashedBeforePush(t *testing.T) {
 		body := userJSONBody(tb, map[string]any{"password": testPassword()})
 		rec := userRequest(tb, ctx, http.MethodPatch, "/api/users/2", body, token)
 		assert.Equal(tb, http.StatusOK, rec.Code, rec.Body.String())
-		assert.NotContains(t, strings.ToLower(rec.Body.String()), testPassword())
+		assert.NotContains(t, strings.ToLower(rec.Body.String()), strings.ToLower(testPassword()))
 
 		// The outer MockUserService.HashPassword auto-helper shadows the
 		// embedded generated mock and registers a matching expectation on it.
